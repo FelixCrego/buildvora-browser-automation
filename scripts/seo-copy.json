@@ -1,0 +1,58 @@
+{
+  "home": {
+    "title": "BuildVora | Practical AI SaaS Development Solutions",
+    "description": "BuildVora offers operator-first AI SaaS development focused on CRM software, marketing automation, SEO platform, and operations software.",
+    "h1": "BuildVora: AI SaaS Built for Operators",
+    "lead": "We create AI SaaS tools designed to support your operations, from CRM software to marketing automation and investor analytics."
+  },
+  "products": {
+    "title": "BuildVora Products | CRM, Marketing Automation & More",
+    "description": "Explore BuildVora’s AI SaaS products including CRM software, marketing automation, SEO platform, and operations software.",
+    "h1": "Our AI SaaS Products",
+    "lead": "Practical tools built to streamline your workflows, improve marketing automation, and provide clear investor analytics."
+  },
+  "platform": {
+    "title": "BuildVora Platform | AI SaaS Development Framework",
+    "description": "BuildVora’s platform supports efficient AI SaaS development for CRM software, SEO platforms, and operations software.",
+    "h1": "The BuildVora Platform",
+    "lead": "A reliable foundation for building AI SaaS solutions that help teams focus on execution and results."
+  },
+  "caseStudies": {
+    "title": "BuildVora Case Studies | Real AI SaaS Applications",
+    "description": "See how BuildVora’s AI SaaS development supports CRM software, marketing automation, and investor analytics in real use cases.",
+    "h1": "Case Studies",
+    "lead": "Practical examples of how our AI SaaS tools improve operations and marketing efforts across industries."
+  },
+  "investors": {
+    "title": "BuildVora Investors | Insights and Analytics",
+    "description": "BuildVora provides investor analytics and operations software designed to support informed decision-making.",
+    "h1": "Investor Relations",
+    "lead": "Reliable investor analytics and clear reporting tools built into our AI SaaS portfolio."
+  },
+  "careers": {
+    "title": "Careers at BuildVora | Join Our AI SaaS Team",
+    "description": "BuildVora is hiring professionals passionate about AI SaaS development, CRM software, and marketing automation.",
+    "h1": "Join BuildVora",
+    "lead": "Work with us to build practical AI SaaS products that help operators get things done."
+  },
+  "ourStory": {
+    "title": "Our Story | BuildVora’s AI SaaS Journey",
+    "description": "Learn about BuildVora’s focus on operator-first AI SaaS development across CRM software, SEO platforms, and more.",
+    "h1": "About BuildVora",
+    "lead": "A practical approach to building AI SaaS tools that serve real-world operational needs."
+  },
+  "upcoming": {
+    "title": "Upcoming Features | BuildVora AI SaaS Portfolio",
+    "description": "Stay updated on upcoming AI SaaS development features including enhancements to CRM software and marketing automation.",
+    "h1": "What’s Next at BuildVora",
+    "lead": "New tools and updates designed to improve operations software and investor analytics."
+  },
+  "saasTemplate": {
+    "titlePattern": "{productName} | AI SaaS by BuildVora",
+    "descriptionTemplate": "Discover {productName}, an AI SaaS solution by BuildVora focused on CRM software, marketing automation, and operations software."
+  },
+  "caseStudyTemplate": {
+    "titlePattern": "{caseName} | BuildVora AI SaaS Case Study",
+    "descriptionTemplate": "Explore how BuildVora’s AI SaaS development helped {caseName} improve CRM software, SEO platform, or investor analytics."
+  }
+}

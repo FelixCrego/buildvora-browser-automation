@@ -1,0 +1,264 @@
+@import "tailwindcss";
+
+:root {
+  --background: #000000;
+  --foreground: #e2e8f0;
+  --slate-deep: #0b1018;
+  --slate-soft: #111827;
+  --slate-muted: #1f2937;
+  --vora-blue: #3b82f6;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-manrope);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-manrope), sans-serif;
+}
+
+.editorial {
+  font-family: var(--font-sora), sans-serif;
+}
+
+.tech {
+  font-family: var(--font-jetbrains-mono), monospace;
+}
+
+.mesh-bg {
+  background:
+    radial-gradient(circle at 20% 15%, rgb(59 130 246 / 26%), transparent 38%),
+    radial-gradient(circle at 80% 0%, rgb(59 130 246 / 15%), transparent 35%),
+    radial-gradient(circle at 50% 85%, rgb(15 23 42 / 80%), transparent 55%),
+    linear-gradient(180deg, #000 0%, #05080f 42%, #000 100%);
+}
+
+.blue-glow {
+  box-shadow:
+    0 0 0.9rem rgb(59 130 246 / 60%),
+    0 0 2.5rem rgb(59 130 246 / 42%),
+    0 0 4.4rem rgb(59 130 246 / 28%);
+}
+
+.neon-pulse {
+  animation: neon-pulse 2.6s ease-in-out infinite;
+}
+
+.float-slow {
+  animation: float-slow 6s ease-in-out infinite;
+}
+
+.grid-noise {
+  background-image:
+    linear-gradient(rgb(59 130 246 / 14%) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(59 130 246 / 14%) 1px, transparent 1px);
+  background-size: 42px 42px;
+  mask-image: radial-gradient(circle at center, black 48%, transparent 90%);
+}
+
+.orbit-ring {
+  animation: orbit-ring-spin 10s linear infinite;
+}
+
+.orbit-dot {
+  animation: orbit-dot-spin 7.5s linear infinite;
+}
+
+.hologram-flicker {
+  animation: hologram-flicker 1.6s steps(2, end) infinite;
+}
+
+.cinematic-vignette {
+  background:
+    radial-gradient(circle at 50% 45%, transparent 35%, rgb(0 0 0 / 24%) 62%, rgb(0 0 0 / 72%) 100%),
+    linear-gradient(180deg, rgb(0 0 0 / 42%) 0%, transparent 16%, transparent 78%, rgb(0 0 0 / 48%) 100%);
+}
+
+.cinematic-grain {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180' viewBox='0 0 180 180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.25' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.38'/%3E%3C/svg%3E");
+  background-size: 180px 180px;
+  mix-blend-mode: soft-light;
+  animation: cinematic-grain-shift 0.42s steps(2, end) infinite;
+}
+
+.cinematic-scanline {
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      rgb(148 163 184 / 4%) 0px,
+      rgb(148 163 184 / 4%) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+  animation: cinematic-scan-drift 12s linear infinite;
+}
+
+.cinematic-beam {
+  background: linear-gradient(114deg, transparent 36%, rgb(96 165 250 / 22%) 50%, transparent 66%);
+  transform: translateX(-44%);
+  animation: cinematic-beam-sweep 8s ease-in-out infinite;
+}
+
+.cinematic-letterbox {
+  background: linear-gradient(180deg, rgb(0 0 0 / 88%) 0%, rgb(0 0 0 / 40%) 100%);
+}
+
+.hero-keyword-gradient {
+  background-image: linear-gradient(120deg, #2563eb 0%, #22d3ee 34%, #818cf8 62%, #38bdf8 100%);
+  background-size: 270% 270%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: hero-keyword-flow 6.6s ease-in-out infinite;
+  text-shadow:
+    0 0 12px rgb(56 189 248 / 40%),
+    0 0 22px rgb(129 140 248 / 28%);
+}
+
+@keyframes neon-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0.6rem rgb(59 130 246 / 58%),
+      0 0 2rem rgb(59 130 246 / 35%);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow:
+      0 0 1.4rem rgb(59 130 246 / 78%),
+      0 0 3.5rem rgb(59 130 246 / 45%);
+    transform: scale(1.03);
+  }
+}
+
+@keyframes float-slow {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+@keyframes orbit-ring-spin {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg);
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(360deg);
+    opacity: 0.45;
+  }
+}
+
+@keyframes orbit-dot-spin {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg) translateX(240px);
+    opacity: 0.85;
+  }
+  50% {
+    opacity: 0.35;
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(360deg) translateX(240px);
+    opacity: 0.85;
+  }
+}
+
+@keyframes hologram-flicker {
+  0%,
+  100% {
+    opacity: 0.85;
+    filter: brightness(1);
+  }
+  20% {
+    opacity: 0.55;
+    filter: brightness(0.9);
+  }
+  40% {
+    opacity: 0.95;
+    filter: brightness(1.08);
+  }
+  60% {
+    opacity: 0.6;
+    filter: brightness(0.95);
+  }
+  80% {
+    opacity: 1;
+    filter: brightness(1.12);
+  }
+}
+
+@keyframes cinematic-grain-shift {
+  0% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(-2%, 2%);
+  }
+  50% {
+    transform: translate(2%, -1%);
+  }
+  75% {
+    transform: translate(1%, 2%);
+  }
+  100% {
+    transform: translate(0, 0);
+  }
+}
+
+@keyframes cinematic-scan-drift {
+  0% {
+    background-position: 0 -120px;
+  }
+  100% {
+    background-position: 0 220px;
+  }
+}
+
+@keyframes cinematic-beam-sweep {
+  0%,
+  100% {
+    transform: translateX(-48%);
+    opacity: 0.2;
+  }
+  45% {
+    transform: translateX(0%);
+    opacity: 0.75;
+  }
+  60% {
+    transform: translateX(22%);
+    opacity: 0.3;
+  }
+}
+
+@keyframes hero-keyword-flow {
+  0% {
+    background-position: 0% 50%;
+    filter: saturate(1.06) brightness(1.03);
+  }
+  25% {
+    background-position: 34% 44%;
+    filter: saturate(1.15) brightness(1.08);
+  }
+  50% {
+    background-position: 100% 52%;
+    filter: saturate(1.22) brightness(1.12);
+  }
+  75% {
+    background-position: 64% 58%;
+    filter: saturate(1.15) brightness(1.08);
+  }
+  100% {
+    background-position: 0% 50%;
+    filter: saturate(1.06) brightness(1.03);
+  }
+}
