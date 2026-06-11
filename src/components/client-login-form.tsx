@@ -8,50 +8,82 @@ export default function ClientLoginForm() {
   const [email, setEmail] = useState("ops@harborlegalgroup.com");
   const [workspaceCode, setWorkspaceCode] = useState("HLG-OPS-01");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setError(null);
+
+    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedCode = workspaceCode.trim().toUpperCase();
+
+    if (!normalizedEmail.includes("@")) {
+      setError("Enter a valid work email.");
+      return;
+    }
+
+    if (normalizedCode.length < 6) {
+      setError("Enter a valid workspace code.");
+      return;
+    }
+
     setLoading(true);
+    window.localStorage.setItem(
+      "buildvora-browser-automation-session",
+      JSON.stringify({
+        email: normalizedEmail,
+        workspaceCode: normalizedCode,
+        signedInAt: new Date().toISOString(),
+      }),
+    );
     window.setTimeout(() => {
       router.push("/workspace/browser-automation");
     }, 450);
   };
 
   return (
-    <form onSubmit={handleSubmit} className="rounded-[2rem] border border-white/10 bg-white/6 p-6 shadow-[0_18px_70px_rgba(0,0,0,0.22)]">
-      <p className="tech text-[10px] uppercase tracking-[0.24em] text-cyan-100">Client Sign-In</p>
-      <h2 className="mt-3 text-3xl font-semibold text-white">Enter your automation workspace</h2>
-      <p className="mt-3 text-sm leading-relaxed text-slate-300">
+    <form onSubmit={handleSubmit} className="rounded-[2.5rem] border border-slate-200 bg-white p-7 shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
+      <p className="tech text-[10px] uppercase tracking-[0.24em] text-[#0071e3]">Client Sign-In</p>
+      <h2 className="mt-3 text-3xl font-semibold tracking-[-0.03em] text-slate-950">Enter your automation workspace</h2>
+      <p className="mt-3 text-sm leading-relaxed text-slate-600">
         This is the client-side entry to the credits-based browser automation portal.
       </p>
 
       <div className="mt-6 grid gap-4">
-        <label className="text-sm text-slate-200">
+        <label className="text-sm text-slate-600">
           Work email
           <input
             type="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            className="mt-2 w-full rounded-[1rem] border border-white/10 bg-[#07101b] px-4 py-3 text-white outline-none focus:border-cyan-300/40"
+            className="mt-2 w-full rounded-[1.25rem] border border-slate-200 bg-white px-4 py-3 text-slate-950 outline-none transition focus:border-[#0071e3]"
           />
         </label>
-        <label className="text-sm text-slate-200">
+        <label className="text-sm text-slate-600">
           Workspace code
           <input
             value={workspaceCode}
             onChange={(event) => setWorkspaceCode(event.target.value)}
-            className="mt-2 w-full rounded-[1rem] border border-white/10 bg-[#07101b] px-4 py-3 text-white outline-none focus:border-cyan-300/40"
+            className="mt-2 w-full rounded-[1.25rem] border border-slate-200 bg-white px-4 py-3 text-slate-950 outline-none transition focus:border-[#0071e3]"
           />
         </label>
+      </div>
+
+      <div className="mt-5 rounded-[1.25rem] bg-[#f5f5f7] p-4">
+        <p className="text-sm font-semibold text-slate-950">Launch note</p>
+        <p className="mt-2 text-sm leading-relaxed text-slate-600">
+          This login is configured as a controlled beta entry flow for launch review. Production auth and account enforcement are the next backend layer.
+        </p>
       </div>
 
       <button
         type="submit"
         disabled={loading}
-        className="mt-6 inline-flex rounded-full bg-cyan-300 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-70"
+        className="mt-6 inline-flex rounded-full bg-[#0071e3] px-5 py-3 text-sm font-medium text-white transition hover:bg-[#0077ed] disabled:cursor-not-allowed disabled:opacity-70"
       >
         {loading ? "Opening Workspace..." : "Sign In To Portal"}
       </button>
+      {error ? <p className="mt-4 text-sm text-rose-600">{error}</p> : null}
     </form>
   );
 }

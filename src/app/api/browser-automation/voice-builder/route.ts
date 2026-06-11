@@ -5,6 +5,8 @@ type VoiceBuilderPayload = {
   transcript?: string;
 };
 
+const MAX_FIELD_LENGTH = 4000;
+
 function dedupe(items: string[]) {
   return Array.from(new Set(items));
 }
@@ -68,6 +70,7 @@ export async function POST(request: Request) {
   try {
     const payload = (await request.json()) as VoiceBuilderPayload;
     const transcript = payload.transcript?.trim();
+    const company = payload.company?.trim() || "Client Workspace";
 
     if (!transcript) {
       return NextResponse.json(
@@ -79,10 +82,29 @@ export async function POST(request: Request) {
       );
     }
 
+    if (transcript.length < 20) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message: "Add more workflow detail before building the automation scope.",
+        },
+        { status: 400 },
+      );
+    }
+
+    if (transcript.length > MAX_FIELD_LENGTH || company.length > 120) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message: "Input is too long. Shorten the request and try again.",
+        },
+        { status: 400 },
+      );
+    }
+
     const systems = detectSystems(transcript);
     const approvals = detectApprovals(transcript);
     const estimatedCreditsPerRun = estimateCredits(transcript);
-    const company = payload.company?.trim() || "Client Workspace";
     const firstSystem = systems[0] || "Browser Workflow";
 
     return NextResponse.json({

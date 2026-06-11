@@ -41,16 +41,16 @@ export default function BrowserAutomationWorkspacePage() {
               <Link
                 key={workflow.id}
                 href={`/workspace/browser-automation/workflows/${workflow.slug}`}
-                className="rounded-[1.5rem] border border-white/10 bg-white/4 p-5 transition hover:border-cyan-300/35 hover:bg-cyan-300/8"
+                className="rounded-[1.5rem] border border-slate-200 bg-white p-5 transition hover:border-[#0071e3]/20 hover:bg-[#f5f9ff]"
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
-                    <p className="text-lg font-semibold text-white">{workflow.name}</p>
-                    <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-400">{workflow.summary}</p>
+                    <p className="text-lg font-semibold text-slate-950">{workflow.name}</p>
+                    <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">{workflow.summary}</p>
                   </div>
                   <StatusPill tone={toneForStatus(workflow.lastRunStatus)}>{workflow.lastRunStatus.replace(/_/g, " ")}</StatusPill>
                 </div>
-                <div className="mt-4 grid gap-3 text-sm text-slate-300 md:grid-cols-3">
+                <div className="mt-4 grid gap-3 text-sm text-slate-600 md:grid-cols-3">
                   <div>
                     <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500">Systems</p>
                     <p className="mt-1">{workflow.systems.join(", ")}</p>
@@ -73,21 +73,21 @@ export default function BrowserAutomationWorkspacePage() {
           <div className="grid gap-4">
             <Link
               href="/workspace/browser-automation/create"
-              className="rounded-[1.4rem] border border-cyan-300/25 bg-cyan-300/8 p-5 transition hover:border-cyan-200/40 hover:bg-cyan-300/12"
+              className="rounded-[1.4rem] border border-slate-200 bg-[#f5f9ff] p-5 transition hover:border-[#0071e3]/25"
             >
-              <p className="text-sm font-semibold text-white">Voice builder</p>
-              <p className="mt-2 text-sm leading-relaxed text-slate-300">
+              <p className="text-sm font-semibold text-slate-950">Voice builder</p>
+              <p className="mt-2 text-sm leading-relaxed text-slate-600">
                 Talk through a new workflow, generate a scoped automation plan, and estimate credits before provisioning.
               </p>
             </Link>
-            <div className="rounded-[1.4rem] border border-white/10 bg-white/4 p-5">
-              <p className="text-sm font-semibold text-white">Pending approvals</p>
+            <div className="rounded-[1.4rem] border border-slate-200 bg-white p-5">
+              <p className="text-sm font-semibold text-slate-950">Pending approvals</p>
               <div className="mt-3 grid gap-3">
                 {approvals.map((approval) => (
                   <Link
                     key={approval.id}
                     href="/workspace/browser-automation/approvals"
-                    className="rounded-[1rem] border border-white/10 bg-[#08111c] px-4 py-3 text-sm text-slate-300 transition hover:border-cyan-300/35"
+                    className="rounded-[1rem] border border-slate-200 bg-[#f5f5f7] px-4 py-3 text-sm text-slate-600 transition hover:border-[#0071e3]/20"
                   >
                     <div className="flex items-center justify-between gap-3">
                       <span>{approval.stepLabel}</span>
@@ -97,8 +97,8 @@ export default function BrowserAutomationWorkspacePage() {
                 ))}
               </div>
             </div>
-            <div className="rounded-[1.4rem] border border-white/10 bg-white/4 p-5">
-              <p className="text-sm font-semibold text-white">Connections needing attention</p>
+            <div className="rounded-[1.4rem] border border-slate-200 bg-white p-5">
+              <p className="text-sm font-semibold text-slate-950">Connections needing attention</p>
               <div className="mt-3 grid gap-3">
                 {connections
                   .filter((connection) => connection.status !== "healthy")
@@ -106,7 +106,7 @@ export default function BrowserAutomationWorkspacePage() {
                     <Link
                       key={connection.id}
                       href="/workspace/browser-automation/connections"
-                      className="flex items-center justify-between gap-3 rounded-[1rem] border border-white/10 bg-[#08111c] px-4 py-3 text-sm text-slate-300 transition hover:border-cyan-300/35"
+                      className="flex items-center justify-between gap-3 rounded-[1rem] border border-slate-200 bg-[#f5f5f7] px-4 py-3 text-sm text-slate-600 transition hover:border-[#0071e3]/20"
                     >
                       <span>{connection.provider}</span>
                       <StatusPill tone={toneForStatus(connection.status)}>{connection.status.replace(/_/g, " ")}</StatusPill>
@@ -114,11 +114,11 @@ export default function BrowserAutomationWorkspacePage() {
                   ))}
               </div>
             </div>
-            <div className="rounded-[1.4rem] border border-white/10 bg-white/4 p-5">
-              <p className="text-sm font-semibold text-white">Latest credit events</p>
+            <div className="rounded-[1.4rem] border border-slate-200 bg-white p-5">
+              <p className="text-sm font-semibold text-slate-950">Latest credit events</p>
               <div className="mt-3 grid gap-3">
                 {ledger.slice(0, 3).map((entry) => (
-                  <div key={entry.id} className="flex items-center justify-between gap-3 rounded-[1rem] border border-white/10 bg-[#08111c] px-4 py-3 text-sm text-slate-300">
+                  <div key={entry.id} className="flex items-center justify-between gap-3 rounded-[1rem] border border-slate-200 bg-[#f5f5f7] px-4 py-3 text-sm text-slate-600">
                     <span>{entry.note}</span>
                     <span>{entry.amount > 0 ? `+${entry.amount}` : entry.amount}</span>
                   </div>
@@ -135,16 +135,16 @@ export default function BrowserAutomationWorkspacePage() {
             <Link
               key={run.id}
               href={`/workspace/browser-automation/runs/${run.id}`}
-              className="rounded-[1.5rem] border border-white/10 bg-white/4 p-5 transition hover:border-cyan-300/35 hover:bg-cyan-300/8"
+              className="rounded-[1.5rem] border border-slate-200 bg-white p-5 transition hover:border-[#0071e3]/20 hover:bg-[#f5f9ff]"
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <p className="text-sm text-slate-500">{run.id}</p>
-                  <p className="mt-1 text-lg font-semibold text-white">{run.summary}</p>
+                  <p className="mt-1 text-lg font-semibold text-slate-950">{run.summary}</p>
                 </div>
                 <StatusPill tone={toneForStatus(run.status)}>{run.status.replace(/_/g, " ")}</StatusPill>
               </div>
-              <div className="mt-4 grid gap-3 text-sm text-slate-300 md:grid-cols-4">
+              <div className="mt-4 grid gap-3 text-sm text-slate-600 md:grid-cols-4">
                 <div>
                   <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500">Requested by</p>
                   <p className="mt-1">{run.requestedBy}</p>

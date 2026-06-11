@@ -82,6 +82,17 @@ export default function VoiceAutomationBuilder() {
 
   const handleGenerate = () => {
     setError(null);
+
+    if (company.trim().length < 2) {
+      setError("Enter the client or workspace name before building the automation scope.");
+      return;
+    }
+
+    if (transcript.trim().length < 20) {
+      setError("Add more workflow detail so the automation scope can be built accurately.");
+      return;
+    }
+
     startTransition(async () => {
       try {
         const response = await fetch("/api/browser-automation/voice-builder", {
@@ -114,27 +125,27 @@ export default function VoiceAutomationBuilder() {
 
   return (
     <div className="grid gap-6">
-      <div className="rounded-[1.8rem] border border-cyan-300/20 bg-cyan-300/8 p-6">
+      <div className="rounded-[2rem] border border-slate-200 bg-[#f5f5f7] p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="tech text-[10px] uppercase tracking-[0.24em] text-cyan-100">Voice Activated Intake</p>
-            <h2 className="mt-2 text-2xl font-semibold text-white">Describe the automation in plain speech.</h2>
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-300">
+            <p className="tech text-[10px] uppercase tracking-[0.24em] text-[#0071e3]">Voice Activated Intake</p>
+            <h2 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950">Describe the automation in plain speech.</h2>
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">
               Say what the browser work is, what systems are involved, what approvals matter, and what result the operator needs.
             </p>
           </div>
-          <div className="flex rounded-full border border-white/10 bg-[#07101b] p-1">
+          <div className="flex rounded-full border border-slate-200 bg-white p-1">
             <button
               type="button"
               onClick={() => setMode("voice")}
-              className={`rounded-full px-4 py-2 text-sm transition ${mode === "voice" ? "bg-cyan-300 text-slate-950" : "text-slate-300"}`}
+              className={`rounded-full px-4 py-2 text-sm transition ${mode === "voice" ? "bg-[#0071e3] text-white" : "text-slate-500"}`}
             >
               Voice
             </button>
             <button
               type="button"
               onClick={() => setMode("typed")}
-              className={`rounded-full px-4 py-2 text-sm transition ${mode === "typed" ? "bg-cyan-300 text-slate-950" : "text-slate-300"}`}
+              className={`rounded-full px-4 py-2 text-sm transition ${mode === "typed" ? "bg-[#0071e3] text-white" : "text-slate-500"}`}
             >
               Typed
             </button>
@@ -142,37 +153,43 @@ export default function VoiceAutomationBuilder() {
         </div>
 
         <div className="mt-5 grid gap-4 md:grid-cols-[0.72fr_1.28fr]">
-          <label className="text-sm text-slate-200">
+          <label className="text-sm text-slate-600">
             Client account
             <input
               value={company}
               onChange={(event) => setCompany(event.target.value)}
-              className="mt-2 w-full rounded-[1rem] border border-white/10 bg-[#07101b] px-4 py-3 text-white outline-none focus:border-cyan-300/40"
+              className="mt-2 w-full rounded-[1.25rem] border border-slate-200 bg-white px-4 py-3 text-slate-950 outline-none transition focus:border-[#0071e3]"
             />
           </label>
-          <div className="rounded-[1rem] border border-white/10 bg-[#07101b] p-4">
-            <p className="text-sm font-semibold text-white">Suggested prompt</p>
-            <p className="mt-2 text-sm leading-relaxed text-slate-400">
-              Example: “Open our intake portal, review new submissions, enrich them with Clio matter details, pause before any client email, then push approved cases into our CRM.”
+          <div className="rounded-[1.25rem] border border-slate-200 bg-white p-4">
+            <p className="text-sm font-semibold text-slate-950">Suggested prompt</p>
+            <p className="mt-2 text-sm leading-relaxed text-slate-600">
+              Example: "Open our intake portal, review new submissions, enrich them with Clio matter details, pause before any client email, then push approved cases into our CRM."
             </p>
           </div>
         </div>
 
-        <div className="mt-5 rounded-[1.3rem] border border-white/10 bg-[#07101b] p-4">
-          <p className="text-sm font-semibold text-white">Transcript</p>
+        <div className="mt-5 rounded-[1.5rem] border border-slate-200 bg-white p-4">
+          <p className="text-sm font-semibold text-slate-950">Transcript</p>
           <textarea
             value={transcript}
             onChange={(event) => setTranscript(event.target.value)}
             rows={6}
             placeholder={mode === "voice" ? "Capture a voice transcript, then refine it here if needed." : "Type the workflow you want automated."}
-            className="mt-3 w-full rounded-[1rem] border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none focus:border-cyan-300/40"
+            className="mt-3 w-full rounded-[1.25rem] border border-slate-200 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-[#0071e3]"
           />
+          <div className="mt-4 rounded-[1.25rem] bg-[#f5f5f7] p-4">
+            <p className="text-sm font-semibold text-slate-950">Launch posture</p>
+            <p className="mt-2 text-sm leading-relaxed text-slate-600">
+              This builder is suitable for launch as a scoped-intake and provisioning layer. Persisted workflow creation, auth enforcement, and Stripe-backed credit debits are the next production backend milestones.
+            </p>
+          </div>
           <div className="mt-4 flex flex-wrap gap-3">
             {mode === "voice" ? (
               <button
                 type="button"
                 onClick={startListening}
-                className="inline-flex rounded-full bg-cyan-300 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-200"
+                className="inline-flex rounded-full bg-[#0071e3] px-5 py-3 text-sm font-medium text-white transition hover:bg-[#0077ed]"
               >
                 {isListening ? "Listening..." : "Start Voice Capture"}
               </button>
@@ -181,53 +198,53 @@ export default function VoiceAutomationBuilder() {
               type="button"
               disabled={isPending}
               onClick={handleGenerate}
-              className="inline-flex rounded-full border border-white/10 bg-white/8 px-5 py-3 text-sm font-semibold text-white transition hover:border-cyan-300/35 disabled:cursor-not-allowed disabled:opacity-70"
+              className="inline-flex rounded-full bg-[#f5f5f7] px-5 py-3 text-sm font-medium text-slate-950 transition hover:bg-[#ebebef] disabled:cursor-not-allowed disabled:opacity-70"
             >
               {isPending ? "Building Scope..." : "Build Automation Scope"}
             </button>
           </div>
-          {error ? <p className="mt-4 text-sm text-rose-300">{error}</p> : null}
+          {error ? <p className="mt-4 text-sm text-rose-600">{error}</p> : null}
         </div>
       </div>
 
       {result ? (
         <div className="grid gap-6 xl:grid-cols-[1.06fr_0.94fr]">
-          <div className="rounded-[1.8rem] border border-white/10 bg-white/6 p-6">
-            <p className="tech text-[10px] uppercase tracking-[0.24em] text-[#d7b26f]">Generated Automation</p>
-            <h3 className="mt-3 text-3xl font-semibold text-white">{result.automationName}</h3>
-            <p className="mt-4 text-base leading-relaxed text-slate-300">{result.summary}</p>
+          <div className="rounded-[1.8rem] border border-slate-200 bg-white p-6 shadow-[0_18px_55px_rgba(15,23,42,0.06)]">
+            <p className="tech text-[10px] uppercase tracking-[0.24em] text-[#0071e3]">Generated Automation</p>
+            <h3 className="mt-3 text-3xl font-semibold tracking-[-0.03em] text-slate-950">{result.automationName}</h3>
+            <p className="mt-4 text-base leading-relaxed text-slate-600">{result.summary}</p>
             <div className="mt-6 grid gap-4 md:grid-cols-2">
-              <div className="rounded-[1.2rem] border border-white/10 bg-[#07101b] p-4">
+              <div className="rounded-[1.2rem] border border-slate-200 bg-[#f5f5f7] p-4">
                 <p className="text-[10px] uppercase tracking-[0.22em] text-slate-500">Systems</p>
-                <p className="mt-2 text-sm text-slate-200">{result.systems.join(", ")}</p>
+                <p className="mt-2 text-sm text-slate-700">{result.systems.join(", ")}</p>
               </div>
-              <div className="rounded-[1.2rem] border border-white/10 bg-[#07101b] p-4">
+              <div className="rounded-[1.2rem] border border-slate-200 bg-[#f5f9ff] p-4">
                 <p className="text-[10px] uppercase tracking-[0.22em] text-slate-500">Credits Per Run</p>
-                <p className="mt-2 text-sm text-cyan-100">{result.estimatedCreditsPerRun}</p>
+                <p className="mt-2 text-sm text-[#0071e3]">{result.estimatedCreditsPerRun}</p>
               </div>
             </div>
           </div>
 
           <div className="grid gap-4">
-            <div className="rounded-[1.5rem] border border-white/10 bg-white/6 p-5">
-              <p className="text-sm font-semibold text-white">Recommended plan</p>
-              <p className="mt-2 text-sm leading-relaxed text-slate-300">{result.recommendedPlan}</p>
+            <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-[0_18px_55px_rgba(15,23,42,0.06)]">
+              <p className="text-sm font-semibold text-slate-950">Recommended plan</p>
+              <p className="mt-2 text-sm leading-relaxed text-slate-600">{result.recommendedPlan}</p>
             </div>
-            <div className="rounded-[1.5rem] border border-white/10 bg-white/6 p-5">
-              <p className="text-sm font-semibold text-white">Approval gates</p>
+            <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-[0_18px_55px_rgba(15,23,42,0.06)]">
+              <p className="text-sm font-semibold text-slate-950">Approval gates</p>
               <div className="mt-3 grid gap-3">
                 {result.approvals.map((item) => (
-                  <div key={item} className="rounded-[1rem] border border-white/10 bg-[#07101b] px-4 py-3 text-sm text-slate-300">
+                  <div key={item} className="rounded-[1rem] border border-slate-200 bg-[#f5f5f7] px-4 py-3 text-sm text-slate-600">
                     {item}
                   </div>
                 ))}
               </div>
             </div>
-            <div className="rounded-[1.5rem] border border-white/10 bg-white/6 p-5">
-              <p className="text-sm font-semibold text-white">Rollout path</p>
+            <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-[0_18px_55px_rgba(15,23,42,0.06)]">
+              <p className="text-sm font-semibold text-slate-950">Rollout path</p>
               <div className="mt-3 grid gap-3">
                 {result.rolloutPath.map((item) => (
-                  <div key={item} className="rounded-[1rem] border border-white/10 bg-[#07101b] px-4 py-3 text-sm text-slate-300">
+                  <div key={item} className="rounded-[1rem] border border-slate-200 bg-[#f5f5f7] px-4 py-3 text-sm text-slate-600">
                     {item}
                   </div>
                 ))}
