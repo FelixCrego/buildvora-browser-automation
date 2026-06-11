@@ -1,0 +1,38 @@
+{
+  "name": "@buildvora/browser-automation",
+  "version": "0.1.0",
+  "description": "BuildVora browser automation harness for OpenAI-backed workflow planning, guarded execution, and credits metering.",
+  "type": "module",
+  "main": "./src/index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/FelixCrego/buildvora-browser-automation.git",
+    "directory": "packages/browser-automation"
+  },
+  "homepage": "https://github.com/FelixCrego/buildvora-browser-automation/tree/main/packages/browser-automation",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "files": [
+    "src",
+    "README.md"
+  ],
+  "keywords": [
+    "browser-automation",
+    "openai",
+    "workflow",
+    "credits",
+    "playwright",
+    "buildvora"
+  ],
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18.18"
+  },
+  "dependencies": {
+    "openai": "^6.42.0"
+  }
+}

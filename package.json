@@ -2,15 +2,20 @@
   "name": "buildvora-browser-automation",
   "version": "0.1.0",
   "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "package:pack": "npm pack --workspace @buildvora/browser-automation",
     "capture:screens": "node scripts/capture-saas-screenshots.mjs",
     "seo:copy": "node scripts/generate-seo-copy.mjs"
   },
   "dependencies": {
+    "@buildvora/browser-automation": "file:packages/browser-automation",
     "framer-motion": "^12.38.0",
     "next": "16.2.6",
     "react": "19.2.4",
