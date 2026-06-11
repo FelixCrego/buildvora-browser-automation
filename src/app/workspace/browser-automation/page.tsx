@@ -71,6 +71,15 @@ export default function BrowserAutomationWorkspacePage() {
 
         <Panel title="Workspace operations" kicker="Current posture">
           <div className="grid gap-4">
+            <Link
+              href="/workspace/browser-automation/create"
+              className="rounded-[1.4rem] border border-cyan-300/25 bg-cyan-300/8 p-5 transition hover:border-cyan-200/40 hover:bg-cyan-300/12"
+            >
+              <p className="text-sm font-semibold text-white">Voice builder</p>
+              <p className="mt-2 text-sm leading-relaxed text-slate-300">
+                Talk through a new workflow, generate a scoped automation plan, and estimate credits before provisioning.
+              </p>
+            </Link>
             <div className="rounded-[1.4rem] border border-white/10 bg-white/4 p-5">
               <p className="text-sm font-semibold text-white">Pending approvals</p>
               <div className="mt-3 grid gap-3">

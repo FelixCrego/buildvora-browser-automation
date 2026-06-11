@@ -10,6 +10,11 @@ const navLinks = [
     hint: "Credits, active workflows, recent runs, and approval posture.",
   },
   {
+    href: "/workspace/browser-automation/create",
+    label: "Voice Builder",
+    hint: "Talk through the workflow you want and convert it into a scoped automation plan.",
+  },
+  {
     href: "/workspace/browser-automation/approvals",
     label: "Approval Inbox",
     hint: "Sensitive actions that need release before the workflow continues.",
