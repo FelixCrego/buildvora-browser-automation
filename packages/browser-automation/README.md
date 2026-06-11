@@ -26,6 +26,7 @@ import {
   BrowserAutomationHarness,
   OpenAIWorkflowBuilder,
   InMemoryCreditLedger,
+  InMemoryRunStore,
 } from "@buildvora/browser-automation";
 
 const browser = {
@@ -42,7 +43,10 @@ const browser = {
 const harness = new BrowserAutomationHarness({
   browser,
   workflowBuilder: new OpenAIWorkflowBuilder(),
-  creditLedger: new InMemoryCreditLedger(),
+  creditLedger: new InMemoryCreditLedger({
+    acct_harbor_legal: 500,
+  }),
+  runStore: new InMemoryRunStore(),
   approvals: {
     async requestApproval({ runId, step }) {
       return { approved: true, approver: "ops@example.com" };
@@ -65,6 +69,19 @@ const result = await harness.run({
 console.log(result.status, result.credits.actualBurn);
 ```
 
+If a protected step should pause instead of auto-approving, return `{ pending: true }` from `requestApproval()`. Then resume later:
+
+```js
+const paused = await harness.run({ accountId, workflow, actor });
+
+if (paused.status === "awaiting_approval") {
+  const resumed = await harness.resume(paused.runId, {
+    approved: true,
+    approver: "ops@example.com",
+  });
+}
+```
+
 ## Core concepts
 
 ### `BrowserAutomationHarness`
@@ -74,6 +91,7 @@ Main runtime. Orchestrates:
 - credit hold
 - execution
 - approval checks
+- resumable approval pauses
 - evidence capture
 - final debit/release
 
@@ -97,6 +115,10 @@ The harness does not force a browser engine. You provide an adapter with methods
 - `captureEvidence(label)`
 
 This makes it easy to wire Playwright or another browser runtime under the hood.
+
+### `createPlaywrightAdapter(page, options)`
+
+Reference adapter for Playwright-backed execution. Pass a Playwright `page` and optional `custom(step, page)` handler.
 
 ## Production notes
 

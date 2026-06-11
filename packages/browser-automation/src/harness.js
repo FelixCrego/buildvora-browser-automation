@@ -1,7 +1,8 @@
 import { EventEmitter } from "node:events";
 import { randomUUID } from "node:crypto";
-import { ApprovalRequiredError, BrowserAutomationError, ValidationError } from "./errors.js";
+import { BrowserAutomationError, RunStateError, ValidationError } from "./errors.js";
 import { estimateWorkflowCredits, InMemoryCreditLedger } from "./credits.js";
+import { InMemoryRunStore } from "./run-store.js";
 import { validateWorkflow } from "./schema.js";
 
 function defaultApprovalHandler() {
@@ -9,6 +10,7 @@ function defaultApprovalHandler() {
     async requestApproval({ step }) {
       return {
         approved: !step.requiresApproval,
+        pending: Boolean(step.requiresApproval),
         approver: step.requiresApproval ? null : "system",
       };
     },
@@ -34,6 +36,7 @@ export class BrowserAutomationHarness extends EventEmitter {
     this.workflowBuilder = options.workflowBuilder;
     this.creditLedger = options.creditLedger ?? new InMemoryCreditLedger();
     this.approvals = options.approvals ?? defaultApprovalHandler();
+    this.runStore = options.runStore ?? new InMemoryRunStore();
     this.now = options.now ?? (() => new Date().toISOString());
   }
 
@@ -64,48 +67,149 @@ export class BrowserAutomationHarness extends EventEmitter {
     const workflow = input.workflow;
     const actor = input.actor ?? "system";
     const estimated = estimateWorkflowCredits(workflow);
-    const hold = this.creditLedger.hold(accountId, estimated.estimatedCredits, {
+    const hold = this.creditLedger.reserve(accountId, estimated.estimatedCredits, {
       runId,
       workflow: workflow.name,
       actor,
     });
 
-    const result = {
+    const state = this.runStore.create({
       runId,
-      status: "running",
-      startedAt: this.now(),
-      completedAt: null,
+      workflow,
       actor,
       accountId,
-      workflowName: workflow.name,
-      evidence: [],
-      stepResults: [],
-      credits: {
-        estimated: estimated.estimatedCredits,
-        actualBurn: 0,
-        released: 0,
-        balanceAfter: hold.balanceAfter,
+      estimatedCredits: estimated.estimatedCredits,
+      holdId: hold.holdId,
+      currentStepIndex: 0,
+      status: "queued",
+      pendingApproval: null,
+      approvedStepIds: [],
+      result: {
+        runId,
+        status: "running",
+        startedAt: this.now(),
+        completedAt: null,
+        actor,
+        accountId,
+        workflowName: workflow.name,
+        evidence: [],
+        stepResults: [],
+        credits: {
+          estimated: estimated.estimatedCredits,
+          actualBurn: 0,
+          released: 0,
+          holdId: hold.holdId,
+          balanceAfter: hold.balanceAfter,
+        },
       },
-    };
+    });
 
     this.emit("run.started", { runId, workflow, actor, estimatedCredits: estimated.estimatedCredits });
+    return this.executeStoredRun(state.runId);
+  }
+
+  async resume(runId, approval = {}) {
+    const state = this.runStore.get(runId);
+    if (!state) {
+      throw new RunStateError(`Unknown run ${runId}.`);
+    }
+
+    if (state.status !== "awaiting_approval" || !state.pendingApproval) {
+      throw new RunStateError(`Run ${runId} is not waiting on approval.`);
+    }
+
+    const decision = {
+      approved: Boolean(approval.approved),
+      denied: approval.denied === true || approval.approved === false,
+      pending: false,
+      approver: approval.approver ?? "operator",
+      notes: approval.notes ?? null,
+    };
+
+    this.emit("run.approval.resolved", {
+      runId,
+      approval: state.pendingApproval,
+      decision,
+    });
+
+    if (decision.denied) {
+      return this.finalizeStoredRun(state, state.result, {
+        status: "cancelled",
+        error: `Approval denied for step ${state.pendingApproval.stepTitle}.`,
+        actualBurn: this.calculateCancelledBurn(state),
+      });
+    }
+
+    this.runStore.update(runId, {
+      status: "running",
+      pendingApproval: null,
+      currentStepIndex: state.pendingApproval.stepIndex,
+      approvedStepIds: [...new Set([...(state.approvedStepIds ?? []), state.pendingApproval.stepId])],
+    });
+
+    return this.executeStoredRun(runId);
+  }
+
+  async executeStoredRun(runId) {
+    const state = this.runStore.get(runId);
+    if (!state) {
+      throw new RunStateError(`Unknown run ${runId}.`);
+    }
+
+    const result = {
+      ...state.result,
+      startedAt: this.now(),
+    };
+    const workflow = state.workflow;
 
     try {
-      for (const step of workflow.steps) {
-        this.emit("run.step.started", { runId, step });
+      this.runStore.update(runId, { status: "running" });
 
-        if (step.requiresApproval) {
+      for (let stepIndex = state.currentStepIndex; stepIndex < workflow.steps.length; stepIndex += 1) {
+        const step = workflow.steps[stepIndex];
+        this.emit("run.step.started", { runId, step, stepIndex });
+
+        if (step.requiresApproval && !(state.approvedStepIds ?? []).includes(step.id)) {
           const approval = await this.approvals.requestApproval({
             runId,
             step,
             workflow,
-            actor,
+            actor: state.actor,
           });
 
-          this.emit("run.step.approval", { runId, step, approval });
+          this.emit("run.step.approval", { runId, step, stepIndex, approval });
 
-          if (!approval?.approved) {
-            throw new ApprovalRequiredError(`Approval denied for step ${step.title}.`);
+          if (approval?.approved) {
+            this.emit("run.step.approved", { runId, step, stepIndex, approval });
+          } else if (approval?.denied) {
+            return this.finalizeStoredRun(state, result, {
+              status: "cancelled",
+              error: `Approval denied for step ${step.title}.`,
+              actualBurn: this.calculateCancelledBurn(state),
+            });
+          } else {
+            const pendingApproval = {
+              stepId: step.id,
+              stepTitle: step.title,
+              stepIndex,
+              requestedAt: this.now(),
+            };
+
+            this.runStore.update(runId, {
+              status: "awaiting_approval",
+              currentStepIndex: stepIndex,
+              pendingApproval,
+              result: {
+                ...result,
+                status: "awaiting_approval",
+              },
+            });
+
+            return {
+              ...result,
+              status: "awaiting_approval",
+              pendingApproval,
+            };
           }
         }
 
@@ -115,47 +219,80 @@ export class BrowserAutomationHarness extends EventEmitter {
           result.evidence.push(stepResult.evidence);
         }
 
-        this.emit("run.step.completed", { runId, step, stepResult });
+        this.emit("run.step.completed", { runId, step, stepIndex, stepResult });
+        this.runStore.update(runId, {
+          currentStepIndex: stepIndex + 1,
+          result,
+        });
       }
 
-      const actualBurn = Math.max(
-        Math.ceil(estimated.estimatedCredits * 0.82),
-        result.stepResults.length * 5,
-      );
-
-      const finalized = this.creditLedger.finalize(accountId, estimated.estimatedCredits, actualBurn, {
-        runId,
-        workflow: workflow.name,
-        actor,
+      return this.finalizeStoredRun(state, result, {
+        status: "completed",
+        actualBurn: this.calculateSuccessBurn(state, result),
       });
-
-      result.status = "completed";
-      result.completedAt = this.now();
-      result.credits.actualBurn = finalized.actualBurn;
-      result.credits.released = finalized.released;
-      result.credits.balanceAfter = finalized.balanceAfter;
-
-      this.emit("run.completed", { runId, result });
-      return result;
     } catch (error) {
-      const failedBurn = Math.max(Math.ceil(estimated.estimatedCredits * 0.25), 6);
-      const finalized = this.creditLedger.finalize(accountId, estimated.estimatedCredits, failedBurn, {
-        runId,
-        workflow: workflow.name,
-        actor,
-        failure: true,
+      return this.finalizeStoredRun(state, result, {
+        status: "failed",
+        error: error instanceof Error ? error.message : "Unexpected automation failure.",
+        actualBurn: this.calculateFailureBurn(state, result),
       });
-
-      result.status = error instanceof ApprovalRequiredError ? "awaiting_approval" : "failed";
-      result.completedAt = this.now();
-      result.credits.actualBurn = finalized.actualBurn;
-      result.credits.released = finalized.released;
-      result.credits.balanceAfter = finalized.balanceAfter;
-      result.error = error instanceof Error ? error.message : "Unexpected automation failure.";
-
-      this.emit("run.failed", { runId, result, error });
-      return result;
     }
+  }
+
+  calculateSuccessBurn(state, result) {
+    return Math.max(
+      Math.ceil(state.estimatedCredits * 0.82),
+      result.stepResults.length * 5,
+    );
+  }
+
+  calculateFailureBurn(state, result) {
+    return Math.max(
+      Math.ceil(state.estimatedCredits * 0.25),
+      result.stepResults.length * 3,
+      6,
+    );
+  }
+
+  calculateCancelledBurn(state) {
+    return Math.max(Math.ceil(state.estimatedCredits * 0.1), 3);
+  }
+
+  finalizeStoredRun(state, result, options) {
+    const finalized = this.creditLedger.capture(state.holdId, options.actualBurn, {
+      runId: state.runId,
+      workflow: state.workflow.name,
+      actor: state.actor,
+      status: options.status,
+    });
+
+    const finalizedResult = {
+      ...result,
+      status: options.status,
+      completedAt: this.now(),
+      error: options.error,
+      pendingApproval: null,
+      credits: {
+        ...result.credits,
+        actualBurn: finalized.actualBurn,
+        released: finalized.released,
+        balanceAfter: finalized.balanceAfter,
+      },
+    };
+
+    this.runStore.update(state.runId, {
+      status: options.status,
+      pendingApproval: null,
+      result: finalizedResult,
+    });
+
+    if (options.status === "completed") {
+      this.emit("run.completed", { runId: state.runId, result: finalizedResult });
+    } else {
+      this.emit("run.failed", { runId: state.runId, result: finalizedResult, error: options.error });
+    }
+
+    return finalizedResult;
   }
 
   async executeStep(step) {

@@ -41,6 +41,8 @@ export class OpenAIWorkflowBuilder {
       "The JSON object must contain: name, objective, riskLevel, systems, approvals, and steps.",
       "Each step must contain: id, title, action, target, input, requiresApproval, verification.",
       "Use action values from: navigate, click, type, wait_for, assert_state, custom.",
+      "Set requiresApproval to true for outbound communication, destructive changes, submissions, purchases, or regulated actions.",
+      "Keep steps concrete and ordered for a browser runtime.",
     ].join(" ");
 
     const response = await this.client.responses.create({
@@ -81,6 +83,7 @@ export class OpenAIWorkflowBuilder {
       sourceTranscript: input.transcript,
       model: this.model,
       rawResponseId: response.id,
+      builtAt: new Date().toISOString(),
     };
 
     validateWorkflow(workflow);

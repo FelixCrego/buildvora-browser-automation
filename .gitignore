@@ -2,6 +2,7 @@
 
 # dependencies
 /node_modules
+/packages/*/node_modules
 /.pnp
 .pnp.*
 .yarn/*
@@ -26,6 +27,7 @@
 
 # debug
 npm-debug.log*
+*.tgz
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
@@ -41,3 +43,4 @@ yarn-error.log*
 next-env.d.ts
 
 .vercel
+/packages/*/package-lock.json

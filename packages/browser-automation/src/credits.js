@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { CreditLimitError } from "./errors.js";
 
 export function estimateWorkflowCredits(workflow) {
@@ -30,6 +31,7 @@ export class InMemoryCreditLedger {
   constructor(initialBalances = {}) {
     this.balances = new Map(Object.entries(initialBalances));
     this.events = [];
+    this.holds = new Map();
   }
 
   getBalance(accountId) {
@@ -43,36 +45,129 @@ export class InMemoryCreditLedger {
     return next;
   }
 
-  hold(accountId, amount, metadata = {}) {
+  reserve(accountId, amount, metadata = {}) {
     const balance = this.getBalance(accountId);
     if (balance < amount) {
       throw new CreditLimitError(`Insufficient credits for account ${accountId}.`);
     }
 
     const next = balance - amount;
+    const holdId = metadata.holdId ?? `hold_${randomUUID()}`;
     this.balances.set(accountId, next);
-    this.events.push({ accountId, type: "hold", amount: -amount, balanceAfter: next, metadata, createdAt: new Date().toISOString() });
-    return { held: amount, balanceAfter: next };
+    const hold = {
+      holdId,
+      accountId,
+      held: amount,
+      balanceAfter: next,
+      metadata,
+      createdAt: new Date().toISOString(),
+      status: "held",
+    };
+    this.holds.set(holdId, hold);
+    this.events.push({ accountId, holdId, type: "hold", amount: -amount, balanceAfter: next, metadata, createdAt: hold.createdAt });
+    return hold;
   }
 
-  finalize(accountId, holdAmount, actualBurn, metadata = {}) {
-    const releaseAmount = Math.max(holdAmount - actualBurn, 0);
-    const debitedAmount = Math.min(actualBurn, holdAmount);
-    let balance = this.getBalance(accountId);
+  hold(accountId, amount, metadata = {}) {
+    return this.reserve(accountId, amount, metadata);
+  }
+
+  getHold(holdId) {
+    return this.holds.get(holdId) ?? null;
+  }
+
+  capture(holdId, actualBurn, metadata = {}) {
+    const hold = this.getHold(holdId);
+    if (!hold) {
+      throw new CreditLimitError(`Unknown credit hold ${holdId}.`, { code: "UNKNOWN_CREDIT_HOLD" });
+    }
+
+    if (hold.status !== "held") {
+      throw new CreditLimitError(`Credit hold ${holdId} is already ${hold.status}.`, {
+        code: "HOLD_ALREADY_FINALIZED",
+      });
+    }
+
+    const releaseAmount = Math.max(hold.held - actualBurn, 0);
+    const debitedAmount = Math.min(actualBurn, hold.held);
+    let balance = this.getBalance(hold.accountId);
+    const eventMetadata = { ...hold.metadata, ...metadata };
 
     if (releaseAmount > 0) {
       balance += releaseAmount;
-      this.balances.set(accountId, balance);
-      this.events.push({ accountId, type: "release", amount: releaseAmount, balanceAfter: balance, metadata, createdAt: new Date().toISOString() });
+      this.balances.set(hold.accountId, balance);
+      this.events.push({
+        accountId: hold.accountId,
+        holdId,
+        type: "release",
+        amount: releaseAmount,
+        balanceAfter: balance,
+        metadata: eventMetadata,
+        createdAt: new Date().toISOString(),
+      });
     }
 
-    this.events.push({ accountId, type: "debit", amount: -debitedAmount, balanceAfter: balance, metadata, createdAt: new Date().toISOString() });
+    this.events.push({
+      accountId: hold.accountId,
+      holdId,
+      type: "debit",
+      amount: -debitedAmount,
+      balanceAfter: balance,
+      metadata: eventMetadata,
+      createdAt: new Date().toISOString(),
+    });
+
+    hold.status = "captured";
+    hold.actualBurn = debitedAmount;
+    hold.released = releaseAmount;
+    hold.balanceAfter = balance;
 
     return {
+      holdId,
       actualBurn: debitedAmount,
       released: releaseAmount,
       balanceAfter: balance,
     };
+  }
+
+  release(holdId, metadata = {}) {
+    const hold = this.getHold(holdId);
+    if (!hold) {
+      throw new CreditLimitError(`Unknown credit hold ${holdId}.`, { code: "UNKNOWN_CREDIT_HOLD" });
+    }
+
+    if (hold.status !== "held") {
+      throw new CreditLimitError(`Credit hold ${holdId} is already ${hold.status}.`, {
+        code: "HOLD_ALREADY_FINALIZED",
+      });
+    }
+
+    const balance = this.getBalance(hold.accountId) + hold.held;
+    this.balances.set(hold.accountId, balance);
+    hold.status = "released";
+    hold.released = hold.held;
+    hold.balanceAfter = balance;
+
+    this.events.push({
+      accountId: hold.accountId,
+      holdId,
+      type: "release",
+      amount: hold.held,
+      balanceAfter: balance,
+      metadata: { ...hold.metadata, ...metadata },
+      createdAt: new Date().toISOString(),
+    });
+
+    return {
+      holdId,
+      released: hold.held,
+      balanceAfter: balance,
+    };
+  }
+
+  finalize(accountId, holdAmount, actualBurn, metadata = {}) {
+    const hold = this.reserve(accountId, holdAmount, metadata);
+    return this.capture(hold.holdId, actualBurn, metadata);
   }
 
   listEvents(accountId) {

@@ -27,3 +27,10 @@ export class CreditLimitError extends BrowserAutomationError {
     this.name = "CreditLimitError";
   }
 }
+
+export class RunStateError extends BrowserAutomationError {
+  constructor(message, options = {}) {
+    super(message, { ...options, code: options.code ?? "RUN_STATE_ERROR" });
+    this.name = "RunStateError";
+  }
+}
