@@ -24,16 +24,19 @@ export default function BrowserAutomationBillingControls({
 }) {
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [couponCode, setCouponCode] = useState("TEST100OFF");
+  const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
 
   async function startCheckout(planId: string) {
     setLoadingPlan(planId);
     setError(null);
+    setCheckoutUrl(null);
 
     try {
       const response = await fetch("/api/browser-automation/billing/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ planId }),
+        body: JSON.stringify({ planId, couponCode }),
       });
 
       const payload = (await response.json()) as { ok?: boolean; url?: string; message?: string };
@@ -41,6 +44,7 @@ export default function BrowserAutomationBillingControls({
         throw new Error(payload.message ?? "Unable to start billing checkout.");
       }
 
+      setCheckoutUrl(payload.url);
       window.location.href = payload.url;
     } catch (checkoutError) {
       setError(checkoutError instanceof Error ? checkoutError.message : "Unexpected checkout error.");
@@ -97,6 +101,23 @@ export default function BrowserAutomationBillingControls({
         </div>
       </div>
 
+      <div className="rounded-[1.5rem] border border-slate-200 bg-[#fff8e8] px-5 py-4">
+        <div className="flex flex-wrap items-end gap-3">
+          <label className="min-w-[240px] flex-1 text-sm text-slate-600">
+            Test coupon
+            <input
+              value={couponCode}
+              onChange={(event) => setCouponCode(event.target.value.toUpperCase())}
+              placeholder="TEST100OFF"
+              className="mt-2 w-full rounded-full border border-slate-200 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-[#0071e3]/30"
+            />
+          </label>
+          <div className="rounded-full border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-amber-700">
+            $100 off testing code
+          </div>
+        </div>
+      </div>
+
       <div className="grid gap-4 lg:grid-cols-3">
         {plans.map((plan) => (
           <article key={plan.id} className="rounded-[1.7rem] border border-slate-200 bg-white p-6 shadow-[0_18px_55px_rgba(15,23,42,0.06)]">
@@ -125,6 +146,19 @@ export default function BrowserAutomationBillingControls({
           </article>
         ))}
       </div>
+
+      {checkoutUrl ? (
+        <div className="rounded-[1.5rem] border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm text-emerald-800">
+          <p className="font-semibold">Redirect prepared</p>
+          <p className="mt-1 break-all">Destination: {checkoutUrl}</p>
+          <a
+            href={checkoutUrl}
+            className="mt-3 inline-flex rounded-full bg-emerald-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700"
+          >
+            Continue to PayPal
+          </a>
+        </div>
+      ) : null}
 
       {error ? <p className="text-sm text-rose-600">{error}</p> : null}
     </div>
