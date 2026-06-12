@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
 type Plan = {
@@ -26,31 +27,6 @@ export default function BrowserAutomationBillingControls({
   const [error, setError] = useState<string | null>(null);
   const [couponCode, setCouponCode] = useState("TEST100OFF");
   const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
-
-  async function startCheckout(planId: string) {
-    setLoadingPlan(planId);
-    setError(null);
-    setCheckoutUrl(null);
-
-    try {
-      const response = await fetch("/api/browser-automation/billing/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ planId, couponCode }),
-      });
-
-      const payload = (await response.json()) as { ok?: boolean; url?: string; message?: string };
-      if (!response.ok || !payload.ok || !payload.url) {
-        throw new Error(payload.message ?? "Unable to start billing checkout.");
-      }
-
-      setCheckoutUrl(payload.url);
-      window.location.href = payload.url;
-    } catch (checkoutError) {
-      setError(checkoutError instanceof Error ? checkoutError.message : "Unexpected checkout error.");
-      setLoadingPlan(null);
-    }
-  }
 
   async function openPortal() {
     setLoadingPlan("portal");
@@ -135,30 +111,20 @@ export default function BrowserAutomationBillingControls({
             <p className="mt-4 text-3xl font-semibold tracking-[-0.03em] text-slate-950">{plan.monthlyLabel}</p>
             <p className="mt-2 text-sm font-medium text-[#0071e3]">{plan.creditsLabel}</p>
             <p className="mt-4 text-sm leading-relaxed text-slate-600">{plan.description}</p>
-            <button
-              type="button"
-              onClick={() => startCheckout(plan.id)}
-              disabled={loadingPlan === plan.id}
-              className="mt-6 inline-flex rounded-full bg-[#0071e3] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#0077ed] disabled:cursor-not-allowed disabled:opacity-70"
+            <Link
+              href={`/api/browser-automation/billing/checkout/redirect?planId=${encodeURIComponent(plan.id)}&couponCode=${encodeURIComponent(couponCode)}`}
+              onClick={() => {
+                setLoadingPlan(plan.id);
+                setError(null);
+                setCheckoutUrl(null);
+              }}
+              className="mt-6 inline-flex rounded-full bg-[#0071e3] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#0077ed]"
             >
               {loadingPlan === plan.id ? "Redirecting..." : plan.id === "topup" ? "Buy top-up" : "Start plan"}
-            </button>
+            </Link>
           </article>
         ))}
       </div>
-
-      {checkoutUrl ? (
-        <div className="rounded-[1.5rem] border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm text-emerald-800">
-          <p className="font-semibold">Redirect prepared</p>
-          <p className="mt-1 break-all">Destination: {checkoutUrl}</p>
-          <a
-            href={checkoutUrl}
-            className="mt-3 inline-flex rounded-full bg-emerald-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700"
-          >
-            Continue to PayPal
-          </a>
-        </div>
-      ) : null}
 
       {error ? <p className="text-sm text-rose-600">{error}</p> : null}
     </div>
