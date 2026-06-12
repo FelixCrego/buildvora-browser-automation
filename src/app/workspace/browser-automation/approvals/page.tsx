@@ -1,4 +1,5 @@
 import { Panel, StatusPill } from "@/components/browser-automation-console";
+import BrowserAutomationApprovalActions from "@/components/browser-automation-approval-actions";
 import { getAccountApprovals, getPrimaryWorkspaceAccount } from "@/lib/browserAutomationPortal";
 
 export default function BrowserAutomationApprovalsPage() {
@@ -32,20 +33,10 @@ export default function BrowserAutomationApprovalsPage() {
                   <p className="mt-1">{approval.expiresAt}</p>
                 </div>
               </div>
-              <div className="mt-5 flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  className="inline-flex rounded-full bg-emerald-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-emerald-300"
-                >
-                  Approve and Continue
-                </button>
-                <button
-                  type="button"
-                  className="inline-flex rounded-full border border-rose-300/30 bg-rose-400/10 px-5 py-3 text-sm font-semibold text-rose-100 transition hover:bg-rose-400/18"
-                >
-                  Reject Step
-                </button>
-              </div>
+              <BrowserAutomationApprovalActions
+                approvalId={approval.id}
+                fallbackApprover={approval.requestedFrom}
+              />
             </article>
           ))}
         </div>

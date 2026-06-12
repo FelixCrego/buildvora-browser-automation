@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 
 export default function BrowserAutomationLaunchSimulator({
   workflowSlug,
@@ -15,11 +16,15 @@ export default function BrowserAutomationLaunchSimulator({
     holdCredits: number;
     projectedStatus: string;
   }>(null);
+  const [runId, setRunId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const handleLaunchPreview = () => {
+  const requestLaunch = (execute: boolean) => {
     setError(null);
+    if (!execute) {
+      setRunId(null);
+    }
     startTransition(async () => {
       try {
         const response = await fetch("/api/browser-automation/runs/launch", {
@@ -31,6 +36,8 @@ export default function BrowserAutomationLaunchSimulator({
             workflowSlug,
             targetCount: Number(targetCount),
             verificationMode,
+            execute,
+            requestedBy: "Workspace Operator",
           }),
         });
 
@@ -43,6 +50,9 @@ export default function BrowserAutomationLaunchSimulator({
             holdCredits: number;
             projectedStatus: string;
           };
+          run?: {
+            id: string;
+          };
         };
 
         if (!response.ok || !payload.launch) {
@@ -50,6 +60,7 @@ export default function BrowserAutomationLaunchSimulator({
         }
 
         setResult(payload.launch);
+        setRunId(payload.run?.id ?? null);
       } catch (launchError) {
         setError(launchError instanceof Error ? launchError.message : "Unexpected launch estimation error.");
       }
@@ -87,10 +98,18 @@ export default function BrowserAutomationLaunchSimulator({
         <button
           type="button"
           disabled={isPending}
-          onClick={handleLaunchPreview}
+          onClick={() => requestLaunch(false)}
           className="inline-flex rounded-full bg-cyan-300 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-70"
         >
           {isPending ? "Estimating..." : "Estimate Credit Hold"}
+        </button>
+        <button
+          type="button"
+          disabled={isPending}
+          onClick={() => requestLaunch(true)}
+          className="inline-flex rounded-full border border-cyan-200/30 bg-white/10 px-5 py-3 text-sm font-semibold text-cyan-50 transition hover:bg-white/16 disabled:cursor-not-allowed disabled:opacity-70"
+        >
+          {isPending ? "Launching..." : "Launch Workflow"}
         </button>
         <p className="self-center text-sm text-slate-300">This previews the reserve-before-run billing pattern for a real launch.</p>
       </div>
@@ -109,6 +128,16 @@ export default function BrowserAutomationLaunchSimulator({
             <p className="mt-2 text-sm font-semibold uppercase tracking-[0.18em] text-cyan-100">{result.projectedStatus.replace(/_/g, " ")}</p>
             <p className="mt-2 text-sm text-slate-400">${result.estimatedVendorCostUsd.toFixed(2)} est. vendor cost</p>
           </div>
+        </div>
+      ) : null}
+      {runId ? (
+        <div className="mt-4 rounded-[1.2rem] border border-emerald-300/20 bg-emerald-300/10 p-4 text-sm text-emerald-50">
+          <p className="font-semibold">Run launched</p>
+          <p className="mt-1">
+            <Link href={`/workspace/browser-automation/runs/${runId}`} className="underline underline-offset-4">
+              Open run {runId}
+            </Link>
+          </p>
         </div>
       ) : null}
       {error ? <p className="mt-4 text-sm text-rose-300">{error}</p> : null}

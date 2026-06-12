@@ -20,6 +20,8 @@
 
 # production
 /build
+/data/browser-automation-state.json
+/artifacts/browser-automation
 
 # misc
 .DS_Store

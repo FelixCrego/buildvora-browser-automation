@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
-import { estimateRunLaunch } from "@/lib/browserAutomationPortal";
+import { estimateRunLaunch, launchWorkflowRun } from "@/lib/browserAutomationPortal";
 
 type LaunchPayload = {
   workflowSlug?: string;
   targetCount?: number;
   verificationMode?: "standard" | "heavy";
+  execute?: boolean;
+  requestedBy?: string;
 };
 
 export async function POST(request: Request) {
@@ -23,6 +25,21 @@ export async function POST(request: Request) {
 
     if (!launch) {
       return NextResponse.json({ ok: false, message: "Workflow not found." }, { status: 404 });
+    }
+
+    if (payload.execute) {
+      const execution = await launchWorkflowRun({
+        workflowSlug: payload.workflowSlug,
+        targetCount: payload.targetCount,
+        verificationMode: payload.verificationMode,
+        requestedBy: payload.requestedBy,
+      });
+
+      return NextResponse.json({
+        ok: true,
+        launch,
+        run: execution.run,
+      });
     }
 
     return NextResponse.json({

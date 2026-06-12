@@ -11,6 +11,7 @@
     "start": "next start",
     "lint": "eslint",
     "package:pack": "npm pack --workspace @buildvora/browser-automation",
+    "worker:browser-automation": "node scripts/run-browser-automation-worker.mjs",
     "capture:screens": "node scripts/capture-saas-screenshots.mjs",
     "seo:copy": "node scripts/generate-seo-copy.mjs"
   },
