@@ -145,6 +145,24 @@ type ApprovalDecisionPayload = {
   notes?: string;
 };
 
+type RunActionPayload = {
+  runId: string;
+  action: "pause" | "cancel" | "retry";
+  actor?: string;
+};
+
+type ConnectionActionPayload = {
+  connectionId: string;
+  action: "reverify" | "rotate";
+  actor?: string;
+};
+
+type WorkerActionPayload = {
+  workerId: string;
+  action: "drain" | "restore";
+  actor?: string;
+};
+
 const EVIDENCE_STILLS = [
   "/browser-automation-stills/still-03.jpg",
   "/browser-automation-stills/still-04.jpg",
@@ -876,6 +894,127 @@ export async function resolveWorkflowApproval(payload: ApprovalDecisionPayload) 
   }
 
   return getRunById(approval.runId);
+}
+
+export async function operateRun(payload: RunActionPayload) {
+  const state = readState();
+  const run = state.runs.find((item) => item.id === payload.runId);
+  if (!run) {
+    throw new Error("Run not found.");
+  }
+
+  if (payload.action === "pause" && ["queued", "running"].includes(run.status)) {
+    run.status = "paused";
+  } else if (payload.action === "cancel" && !["completed", "cancelled"].includes(run.status)) {
+    run.status = "cancelled";
+    run.completedAt = nowIso();
+  } else if (payload.action === "retry") {
+    run.status = "queued";
+    run.completedAt = undefined;
+    run.summary = `${run.summary} Retry queued by operator.`;
+  }
+
+  const runtimeRun = state.runtimeRuns.find((item) => item.runId === payload.runId);
+  if (runtimeRun) {
+    if (payload.action === "pause" && ["queued", "running"].includes(runtimeRun.status)) {
+      runtimeRun.status = "paused";
+      runtimeRun.result.status = "paused";
+    } else if (payload.action === "cancel") {
+      runtimeRun.status = "cancelled";
+      runtimeRun.result.status = "cancelled";
+      runtimeRun.result.completedAt = nowIso();
+    } else if (payload.action === "retry") {
+      runtimeRun.status = "queued";
+      runtimeRun.currentStepIndex = 0;
+      runtimeRun.pendingApproval = null;
+      runtimeRun.result.status = "queued";
+      runtimeRun.result.completedAt = null;
+      runtimeRun.result.error = undefined;
+      runtimeRun.result.stepResults = [];
+      runtimeRun.result.evidence = [];
+      runtimeRun.result.credits.actualBurn = 0;
+      runtimeRun.result.credits.released = 0;
+    }
+  }
+
+  syncWorkflowRunStatus(state, run.workflowSlug, run.status);
+  normalizeWorkerMetrics(state);
+  addAuditEvent(state, {
+    accountSlug: run.accountSlug,
+    actor: payload.actor ?? "operator",
+    event: `run.${payload.action}`,
+    target: run.id,
+    severity: payload.action === "cancel" ? "critical" : "warning",
+    detail: `${payload.action} applied to ${run.id}.`,
+  });
+  writeState(state);
+
+  if (payload.action === "retry") {
+    const workflow = state.workflows.find((item) => item.slug === run.workflowSlug);
+    if (workflow) {
+      return launchWorkflowRun({
+        workflowSlug: workflow.slug,
+        requestedBy: payload.actor ?? run.requestedBy,
+        targetCount: 6,
+        verificationMode: workflow.verificationMode.toLowerCase() === "heavy" ? "heavy" : "standard",
+      });
+    }
+  }
+
+  return getRunById(payload.runId);
+}
+
+export function operateConnection(payload: ConnectionActionPayload) {
+  const state = readState();
+  const connection = state.connections.find((item) => item.id === payload.connectionId);
+  if (!connection) {
+    throw new Error("Connection not found.");
+  }
+
+  if (payload.action === "reverify") {
+    connection.status = "healthy";
+    connection.lastVerifiedAt = nowIso();
+  } else if (payload.action === "rotate") {
+    connection.status = "needs_attention";
+    connection.lastVerifiedAt = nowIso();
+  }
+
+  addAuditEvent(state, {
+    accountSlug: connection.accountSlug,
+    actor: payload.actor ?? "operator",
+    event: `connection.${payload.action}`,
+    target: connection.id,
+    severity: payload.action === "rotate" ? "warning" : "info",
+    detail: `${payload.action} applied to ${connection.provider}.`,
+  });
+  writeState(state);
+  return connection;
+}
+
+export function operateWorker(payload: WorkerActionPayload) {
+  const state = readState();
+  const worker = state.workers.find((item) => item.id === payload.workerId);
+  if (!worker) {
+    throw new Error("Worker not found.");
+  }
+
+  if (payload.action === "drain") {
+    worker.status = "degraded";
+    worker.queueDepth = 0;
+  } else if (payload.action === "restore") {
+    worker.status = "healthy";
+  }
+
+  worker.lastHeartbeatAt = nowIso();
+  addAuditEvent(state, {
+    actor: payload.actor ?? "operator",
+    event: `worker.${payload.action}`,
+    target: worker.id,
+    severity: payload.action === "drain" ? "warning" : "info",
+    detail: `${payload.action} applied to ${worker.label}.`,
+  });
+  writeState(state);
+  return worker;
 }
 
 function buildControlPlaneSnapshot(state: BrowserAutomationState) {

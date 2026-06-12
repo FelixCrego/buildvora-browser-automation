@@ -1,6 +1,11 @@
 import Link from "next/link";
 import ClientLoginForm from "@/components/client-login-form";
 import BrowserAutomationApprovalActions from "@/components/browser-automation-approval-actions";
+import {
+  ConnectionInlineActions,
+  RunInlineActions,
+  WorkerInlineActions,
+} from "@/components/browser-automation-inline-actions";
 import BrowserAutomationLaunchSimulator from "@/components/browser-automation-launch-simulator";
 import { StatusPill } from "@/components/browser-automation-console";
 import {
@@ -38,9 +43,17 @@ function riskTone(riskLevel: string) {
   return "green" as const;
 }
 
-function metricCard(label: string, value: string, note: string) {
+function MetricCard({
+  label,
+  value,
+  note,
+}: {
+  label: string;
+  value: string;
+  note: string;
+}) {
   return (
-    <article className="rounded-[1.4rem] border border-slate-200 bg-white px-4 py-4 shadow-[0_12px_34px_rgba(15,23,42,0.05)]">
+    <article className="rounded-[1.3rem] border border-slate-200 bg-white px-4 py-4 shadow-[0_10px_30px_rgba(15,23,42,0.05)]">
       <p className="tech text-[10px] uppercase tracking-[0.22em] text-slate-500">{label}</p>
       <p className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950">{value}</p>
       <p className="mt-1 text-xs leading-relaxed text-slate-500">{note}</p>
@@ -67,12 +80,12 @@ export default function PortalPage() {
           <div className="flex flex-wrap items-start justify-between gap-6">
             <div className="max-w-4xl">
               <p className="tech text-[10px] uppercase tracking-[0.3em] text-[#0071e3]">BuildVora Browser Automation</p>
-              <h1 className="editorial mt-3 text-[clamp(2.7rem,4.8vw,5rem)] leading-[0.93] tracking-[-0.05em] text-slate-950">
-                Unified launch console
+              <h1 className="editorial mt-3 text-[clamp(2.5rem,4.3vw,4.8rem)] leading-[0.93] tracking-[-0.05em] text-slate-950">
+                Unified launch command center
               </h1>
               <p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-600 md:text-base">
-                One screen for the signed client workspace and the admin control plane. Launch work, release approvals,
-                track credits, inspect queue pressure, and watch worker health without jumping between disconnected pages.
+                One working surface for client execution and internal operations. Launch workflows, settle approvals,
+                monitor credits, and act on worker or connection issues without leaving the page.
               </p>
             </div>
 
@@ -81,29 +94,29 @@ export default function PortalPage() {
                 href="/workspace/browser-automation"
                 className="inline-flex rounded-full bg-[#0071e3] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#0077ed]"
               >
-                Open workspace
+                Workspace
               </Link>
               <Link
                 href="/admin/browser-automation"
                 className="inline-flex rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-950 transition hover:border-[#0071e3]/20 hover:bg-[#f5f9ff]"
               >
-                Open backend
+                Backend
               </Link>
             </div>
           </div>
 
           <div className="mt-6 grid gap-3 md:grid-cols-3 xl:grid-cols-6">
-            {metricCard("Client credits", account.availableCredits.toLocaleString(), account.planName)}
-            {metricCard("Workflows", String(workflows.length), "Provisioned and launchable")}
-            {metricCard("Approvals", String(approvals.length), "Waiting on release")}
-            {metricCard("Active runs", String(snapshot.totals.activeRuns), "Running, queued, blocked")}
-            {metricCard("Queue depth", String(snapshot.totals.queueDepth), "Across worker fleet")}
-            {metricCard("Worker alerts", String(snapshot.totals.degradedWorkers), "Needs operator attention")}
+            <MetricCard label="Credits" value={account.availableCredits.toLocaleString()} note={account.planName} />
+            <MetricCard label="Workflows" value={String(workflows.length)} note="Provisioned and launchable" />
+            <MetricCard label="Approvals" value={String(approvals.length)} note="Waiting on release" />
+            <MetricCard label="Active runs" value={String(snapshot.totals.activeRuns)} note="Running, queued, blocked" />
+            <MetricCard label="Queue depth" value={String(snapshot.totals.queueDepth)} note="Across worker fleet" />
+            <MetricCard label="Worker alerts" value={String(snapshot.totals.degradedWorkers)} note="Operator attention" />
           </div>
         </div>
       </section>
 
-      <section className="sticky top-0 z-20 border-b border-slate-200 bg-white/88 backdrop-blur">
+      <section className="sticky top-0 z-20 border-b border-slate-200 bg-white/90 backdrop-blur">
         <div className="mx-auto flex max-w-7xl flex-wrap gap-2 px-6 py-3 md:px-10">
           {[
             ["#launch", "Launch"],
@@ -115,7 +128,7 @@ export default function PortalPage() {
             <a
               key={href}
               href={href}
-              className="rounded-full border border-slate-200 bg-[#f7f8fb] px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600 transition hover:border-[#0071e3]/20 hover:bg-[#f2f8ff] hover:text-[#0071e3]"
+              className="rounded-full border border-slate-200 bg-[#f7f8fb] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600 transition hover:border-[#0071e3]/20 hover:bg-[#f2f8ff] hover:text-[#0071e3]"
             >
               {label}
             </a>
@@ -123,36 +136,35 @@ export default function PortalPage() {
         </div>
       </section>
 
-      <div className="mx-auto grid max-w-7xl gap-6 px-6 py-8 md:px-10 xl:grid-cols-[1.12fr_0.88fr]">
+      <div className="mx-auto grid max-w-7xl gap-6 px-6 py-8 md:px-10 xl:grid-cols-[1.18fr_0.82fr]">
         <div className="grid gap-6">
-          <section id="launch" className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_18px_50px_rgba(15,23,42,0.06)]">
+          <section id="launch" className="rounded-[1.9rem] border border-slate-200 bg-white p-6 shadow-[0_18px_50px_rgba(15,23,42,0.06)]">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <p className="tech text-[10px] uppercase tracking-[0.24em] text-[#0071e3]">Launch desk</p>
-                <h2 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950">
-                  {featuredWorkflow?.name}
-                </h2>
+                <h2 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950">{featuredWorkflow?.name}</h2>
                 <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-600">{featuredWorkflow?.summary}</p>
               </div>
               <div className="flex flex-wrap gap-2">
-                <StatusPill tone={riskTone(featuredWorkflow?.riskLevel ?? "low")}>
-                  {featuredWorkflow?.riskLevel} risk
-                </StatusPill>
+                <StatusPill tone={riskTone(featuredWorkflow?.riskLevel ?? "low")}>{featuredWorkflow?.riskLevel} risk</StatusPill>
                 <StatusPill tone="blue">{featuredWorkflow?.estimatedCredits}</StatusPill>
-                <StatusPill tone={tone(featuredWorkflow?.lastRunStatus ?? "slate")}>
-                  {featuredWorkflow?.lastRunStatus.replace(/_/g, " ")}
-                </StatusPill>
+                <StatusPill tone={tone(featuredWorkflow?.lastRunStatus ?? "slate")}>{featuredWorkflow?.lastRunStatus.replace(/_/g, " ")}</StatusPill>
               </div>
             </div>
 
-            <div className="mt-5 grid gap-4 xl:grid-cols-[1fr_0.96fr]">
-              <div className="rounded-[1.5rem] border border-slate-200 bg-[#08111c] p-4">
+            <div className="mt-5 grid gap-4 xl:grid-cols-[1.02fr_0.98fr]">
+              <div className="rounded-[1.4rem] border border-slate-200 bg-[#08111c] p-4">
                 {featuredWorkflow ? <BrowserAutomationLaunchSimulator workflowSlug={featuredWorkflow.slug} /> : null}
               </div>
-              <div className="rounded-[1.5rem] border border-slate-200 bg-[#f8fafc] p-4">
-                <p className="text-sm font-semibold text-slate-950">Workflow matrix</p>
+              <div className="rounded-[1.4rem] border border-slate-200 bg-[#f8fafc] p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-semibold text-slate-950">Workflow matrix</p>
+                  <Link href="/workspace/browser-automation" className="text-xs font-semibold uppercase tracking-[0.16em] text-[#0071e3]">
+                    Full workspace
+                  </Link>
+                </div>
                 <div className="mt-4 overflow-hidden rounded-[1.2rem] border border-slate-200 bg-white">
-                  <div className="grid grid-cols-[1.1fr_0.75fr_0.75fr] gap-3 bg-[#f5f5f7] px-4 py-3 text-[10px] uppercase tracking-[0.18em] text-slate-500">
+                  <div className="grid grid-cols-[1.1fr_0.72fr_0.72fr] gap-3 bg-[#f5f5f7] px-4 py-3 text-[10px] uppercase tracking-[0.18em] text-slate-500">
                     <span>Workflow</span>
                     <span>Status</span>
                     <span>Credits</span>
@@ -161,18 +173,14 @@ export default function PortalPage() {
                     <Link
                       key={workflow.id}
                       href={`/workspace/browser-automation/workflows/${workflow.slug}`}
-                      className="grid grid-cols-[1.1fr_0.75fr_0.75fr] gap-3 border-t border-slate-200 px-4 py-4 text-sm text-slate-600 transition hover:bg-[#f8fbff]"
+                      className="grid grid-cols-[1.1fr_0.72fr_0.72fr] gap-3 border-t border-slate-200 px-4 py-4 text-sm text-slate-600 transition hover:bg-[#f8fbff]"
                     >
                       <div>
                         <p className="font-semibold text-slate-950">{workflow.name}</p>
-                        <p className="mt-1 text-xs uppercase tracking-[0.14em] text-slate-500">
-                          {workflow.systems.join(" / ")}
-                        </p>
+                        <p className="mt-1 text-xs uppercase tracking-[0.14em] text-slate-500">{workflow.systems.join(" / ")}</p>
                       </div>
                       <div className="self-center">
-                        <StatusPill tone={tone(workflow.lastRunStatus)}>
-                          {workflow.lastRunStatus.replace(/_/g, " ")}
-                        </StatusPill>
+                        <StatusPill tone={tone(workflow.lastRunStatus)}>{workflow.lastRunStatus.replace(/_/g, " ")}</StatusPill>
                       </div>
                       <div className="self-center text-slate-950">{workflow.estimatedCredits}</div>
                     </Link>
@@ -182,16 +190,13 @@ export default function PortalPage() {
             </div>
           </section>
 
-          <section id="approvals" className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_18px_50px_rgba(15,23,42,0.06)]">
+          <section id="approvals" className="rounded-[1.9rem] border border-slate-200 bg-white p-6 shadow-[0_18px_50px_rgba(15,23,42,0.06)]">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="tech text-[10px] uppercase tracking-[0.24em] text-[#0071e3]">Approval queue</p>
                 <h2 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950">Protected actions waiting on release</h2>
               </div>
-              <Link
-                href="/workspace/browser-automation/approvals"
-                className="rounded-full border border-slate-200 bg-[#f5f5f7] px-4 py-2 text-sm font-semibold text-slate-950 transition hover:border-[#0071e3]/20 hover:bg-[#f5f9ff]"
-              >
+              <Link href="/workspace/browser-automation/approvals" className="rounded-full border border-slate-200 bg-[#f5f5f7] px-4 py-2 text-sm font-semibold text-slate-950 transition hover:border-[#0071e3]/20 hover:bg-[#f5f9ff]">
                 Full inbox
               </Link>
             </div>
@@ -227,55 +232,49 @@ export default function PortalPage() {
                         </div>
                       </div>
                     </div>
-                    <BrowserAutomationApprovalActions
-                      approvalId={approval.id}
-                      fallbackApprover={approval.requestedFrom}
-                    />
+                    <BrowserAutomationApprovalActions approvalId={approval.id} fallbackApprover={approval.requestedFrom} />
                   </article>
                 ))
               )}
             </div>
           </section>
 
-          <section id="runs" className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_18px_50px_rgba(15,23,42,0.06)]">
+          <section id="runs" className="rounded-[1.9rem] border border-slate-200 bg-white p-6 shadow-[0_18px_50px_rgba(15,23,42,0.06)]">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="tech text-[10px] uppercase tracking-[0.24em] text-[#0071e3]">Execution ledger</p>
-                <h2 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950">Runs, evidence posture, and credit settlement</h2>
+                <h2 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950">Runs, credit settlement, and operator controls</h2>
               </div>
-              <Link
-                href="/workspace/browser-automation"
-                className="rounded-full border border-slate-200 bg-[#f5f5f7] px-4 py-2 text-sm font-semibold text-slate-950 transition hover:border-[#0071e3]/20 hover:bg-[#f5f9ff]"
-              >
+              <Link href="/workspace/browser-automation" className="rounded-full border border-slate-200 bg-[#f5f5f7] px-4 py-2 text-sm font-semibold text-slate-950 transition hover:border-[#0071e3]/20 hover:bg-[#f5f9ff]">
                 Workspace detail
               </Link>
             </div>
 
             <div className="mt-5 overflow-hidden rounded-[1.4rem] border border-slate-200">
-              <div className="grid grid-cols-[1.2fr_0.8fr_0.7fr_0.7fr_0.7fr] gap-3 bg-[#f5f5f7] px-4 py-3 text-[10px] uppercase tracking-[0.18em] text-slate-500">
+              <div className="grid grid-cols-[1.1fr_0.8fr_0.7fr_0.55fr_0.55fr_0.95fr] gap-3 bg-[#f5f5f7] px-4 py-3 text-[10px] uppercase tracking-[0.18em] text-slate-500">
                 <span>Run</span>
                 <span>Status</span>
                 <span>Requested</span>
                 <span>Credits</span>
                 <span>Lane</span>
+                <span>Action</span>
               </div>
               {runs.slice(0, 6).map((run) => (
-                <Link
-                  key={run.id}
-                  href={`/workspace/browser-automation/runs/${run.id}`}
-                  className="grid grid-cols-[1.2fr_0.8fr_0.7fr_0.7fr_0.7fr] gap-3 border-t border-slate-200 bg-white px-4 py-4 text-sm text-slate-600 transition hover:bg-[#f8fbff]"
-                >
-                  <div>
+                <div key={run.id} className="grid grid-cols-[1.1fr_0.8fr_0.7fr_0.55fr_0.55fr_0.95fr] gap-3 border-t border-slate-200 bg-white px-4 py-4 text-sm text-slate-600">
+                  <Link href={`/workspace/browser-automation/runs/${run.id}`} className="min-w-0 transition hover:text-[#0071e3]">
                     <p className="font-semibold text-slate-950">{run.id}</p>
                     <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-slate-500">{run.summary}</p>
-                  </div>
+                  </Link>
                   <div className="self-center">
                     <StatusPill tone={tone(run.status)}>{run.status.replace(/_/g, " ")}</StatusPill>
                   </div>
                   <div className="self-center">{run.requestedBy}</div>
                   <div className="self-center text-slate-950">{run.actualCredits}</div>
                   <div className="self-center uppercase tracking-[0.14em] text-slate-500">{run.queueLane}</div>
-                </Link>
+                  <div className="self-center">
+                    <RunInlineActions runId={run.id} />
+                  </div>
+                </div>
               ))}
             </div>
 
@@ -286,9 +285,7 @@ export default function PortalPage() {
                   {ledger.slice(0, 4).map((entry) => (
                     <div key={entry.id} className="flex items-center justify-between gap-3 rounded-[1rem] bg-white px-4 py-3 text-sm text-slate-600">
                       <span>{entry.note}</span>
-                      <span className="font-semibold text-slate-950">
-                        {entry.amount > 0 ? `+${entry.amount}` : entry.amount}
-                      </span>
+                      <span className="font-semibold text-slate-950">{entry.amount > 0 ? `+${entry.amount}` : entry.amount}</span>
                     </div>
                   ))}
                 </div>
@@ -297,14 +294,17 @@ export default function PortalPage() {
                 <p className="text-sm font-semibold text-slate-950">Connection blockers</p>
                 <div className="mt-4 grid gap-3">
                   {(unhealthyConnections.length ? unhealthyConnections : connections.slice(0, 2)).map((connection) => (
-                    <div key={connection.id} className="flex items-center justify-between gap-3 rounded-[1rem] bg-white px-4 py-3 text-sm text-slate-600">
-                      <div>
-                        <p className="font-semibold text-slate-950">{connection.provider}</p>
-                        <p className="mt-1 text-xs text-slate-500">{connection.label}</p>
+                    <div key={connection.id} className="rounded-[1rem] bg-white px-4 py-3 text-sm text-slate-600">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className="font-semibold text-slate-950">{connection.provider}</p>
+                          <p className="mt-1 text-xs text-slate-500">{connection.label}</p>
+                        </div>
+                        <StatusPill tone={tone(connection.status)}>{connection.status.replace(/_/g, " ")}</StatusPill>
                       </div>
-                      <StatusPill tone={tone(connection.status)}>
-                        {connection.status.replace(/_/g, " ")}
-                      </StatusPill>
+                      <div className="mt-3">
+                        <ConnectionInlineActions connectionId={connection.id} />
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -314,50 +314,46 @@ export default function PortalPage() {
         </div>
 
         <div className="grid gap-6">
-          <section id="ops" className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_18px_50px_rgba(15,23,42,0.06)]">
+          <section id="ops" className="rounded-[1.9rem] border border-slate-200 bg-white p-6 shadow-[0_18px_50px_rgba(15,23,42,0.06)]">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="tech text-[10px] uppercase tracking-[0.24em] text-[#0071e3]">Operations backend</p>
                 <h2 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950">Queue, workers, and commercial posture</h2>
               </div>
-              <Link
-                href="/admin/browser-automation"
-                className="rounded-full border border-slate-200 bg-[#f5f5f7] px-4 py-2 text-sm font-semibold text-slate-950 transition hover:border-[#0071e3]/20 hover:bg-[#f5f9ff]"
-              >
+              <Link href="/admin/browser-automation" className="rounded-full border border-slate-200 bg-[#f5f5f7] px-4 py-2 text-sm font-semibold text-slate-950 transition hover:border-[#0071e3]/20 hover:bg-[#f5f9ff]">
                 Full control plane
               </Link>
             </div>
 
             <div className="mt-5 grid gap-3 md:grid-cols-2">
-              {metricCard("Accounts", String(snapshot.totals.accounts), "Provisioned tenants")}
-              {metricCard("Revenue", `$${snapshot.totals.monthlyRevenue.toLocaleString()}`, "Live monthly value")}
-              {metricCard("Drafts", String(snapshot.totals.drafts), "Awaiting release")}
-              {metricCard("Disconnected", String(snapshot.totals.disconnectedConnections), "Execution blockers")}
+              <MetricCard label="Accounts" value={String(snapshot.totals.accounts)} note="Provisioned tenants" />
+              <MetricCard label="Revenue" value={`$${snapshot.totals.monthlyRevenue.toLocaleString()}`} note="Live monthly value" />
+              <MetricCard label="Drafts" value={String(snapshot.totals.drafts)} note="Awaiting release" />
+              <MetricCard label="Disconnected" value={String(snapshot.totals.disconnectedConnections)} note="Execution blockers" />
             </div>
 
             <div className="mt-5 overflow-hidden rounded-[1.4rem] border border-slate-200">
-              <div className="grid grid-cols-[1fr_0.7fr_0.7fr_0.7fr] gap-3 bg-[#f5f5f7] px-4 py-3 text-[10px] uppercase tracking-[0.18em] text-slate-500">
+              <div className="grid grid-cols-[0.92fr_0.6fr_0.5fr_0.5fr_0.78fr] gap-3 bg-[#f5f5f7] px-4 py-3 text-[10px] uppercase tracking-[0.18em] text-slate-500">
                 <span>Worker</span>
                 <span>Status</span>
                 <span>Active</span>
                 <span>Queue</span>
+                <span>Action</span>
               </div>
               {workers.map((worker) => (
-                <div
-                  key={worker.id}
-                  className="grid grid-cols-[1fr_0.7fr_0.7fr_0.7fr] gap-3 border-t border-slate-200 bg-white px-4 py-4 text-sm text-slate-600"
-                >
+                <div key={worker.id} className="grid grid-cols-[0.92fr_0.6fr_0.5fr_0.5fr_0.78fr] gap-3 border-t border-slate-200 bg-white px-4 py-4 text-sm text-slate-600">
                   <div>
                     <p className="font-semibold text-slate-950">{worker.label}</p>
-                    <p className="mt-1 text-xs uppercase tracking-[0.14em] text-slate-500">
-                      {worker.region} / {worker.runtime}
-                    </p>
+                    <p className="mt-1 text-xs uppercase tracking-[0.14em] text-slate-500">{worker.region} / {worker.runtime}</p>
                   </div>
                   <div className="self-center">
                     <StatusPill tone={tone(worker.status)}>{worker.status}</StatusPill>
                   </div>
                   <div className="self-center text-slate-950">{worker.activeRuns}</div>
                   <div className="self-center text-slate-950">{worker.queueDepth}</div>
+                  <div className="self-center">
+                    <WorkerInlineActions workerId={worker.id} status={worker.status} />
+                  </div>
                 </div>
               ))}
             </div>
@@ -375,7 +371,7 @@ export default function PortalPage() {
             </div>
           </section>
 
-          <section id="access" className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_18px_50px_rgba(15,23,42,0.06)]">
+          <section id="access" className="rounded-[1.9rem] border border-slate-200 bg-white p-6 shadow-[0_18px_50px_rgba(15,23,42,0.06)]">
             <div>
               <p className="tech text-[10px] uppercase tracking-[0.24em] text-[#0071e3]">Access</p>
               <h2 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950">Client sign-in and route shortcuts</h2>
@@ -387,15 +383,15 @@ export default function PortalPage() {
 
             <div className="mt-5 grid gap-3 md:grid-cols-2">
               {[
-                ["/workspace/browser-automation/create", "Voice builder", "Scope new browser workflows"],
-                ["/workspace/browser-automation/connections", "Connections", "Review credentials and health"],
-                ["/admin/browser-automation/runs", "Run controls", "Pause, retry, re-lane execution"],
-                ["/admin/browser-automation/credits", "Credits ledger", "Audit holds, debits, and adjustments"],
+                ["/workspace/browser-automation/create", "Voice builder", "Scope new workflows"],
+                ["/workspace/browser-automation/connections", "Connections", "Credential review"],
+                ["/admin/browser-automation/runs", "Run controls", "Queue operations"],
+                ["/admin/browser-automation/credits", "Credits ledger", "Audit billing movement"],
               ].map(([href, label, detail]) => (
                 <Link
                   key={href}
                   href={href}
-                  className="rounded-[1.3rem] border border-slate-200 bg-[#f8fafc] px-4 py-4 transition hover:border-[#0071e3]/20 hover:bg-[#f5f9ff]"
+                  className="rounded-[1.2rem] border border-slate-200 bg-[#f8fafc] px-4 py-4 transition hover:border-[#0071e3]/20 hover:bg-[#f5f9ff]"
                 >
                   <p className="font-semibold text-slate-950">{label}</p>
                   <p className="mt-1 text-sm text-slate-500">{detail}</p>
