@@ -5,13 +5,18 @@ export type ConnectionStatus = "healthy" | "needs_attention" | "disconnected";
 export type WorkerStatus = "healthy" | "degraded" | "offline";
 export type WorkflowState = "draft" | "published" | "paused";
 export type AuditSeverity = "info" | "warning" | "critical";
+export type PlanType = "trial" | "starter" | "operator" | "scale";
+export type BillingState = "inactive" | "trialing" | "active" | "past_due";
+export type RunClass = "light" | "standard" | "heavy";
 
 export type BrowserAutomationAccount = {
   id: string;
   slug: string;
   name: string;
   vertical: string;
+  planType: PlanType;
   planName: string;
+  billingStatus: BillingState;
   monthlyCredits: number;
   availableCredits: number;
   softLimitCredits: number;
@@ -22,6 +27,11 @@ export type BrowserAutomationAccount = {
   seats: number;
   status: "active" | "trial" | "restricted";
   concurrencyLimit: number;
+  canPublish: boolean;
+  trialStartedAt: string | null;
+  trialExpiresAt: string | null;
+  trialCreditsTotal: number;
+  trialCreditsRemaining: number;
 };
 
 export type BrowserAutomationWorkflow = {
@@ -61,11 +71,14 @@ export type BrowserAutomationRun = {
   accountSlug: string;
   workflowSlug: string;
   requestedBy: string;
+  runClass: RunClass;
   status: RunStatus;
   startedAt: string;
   completedAt?: string;
   estimatedCredits: number;
   actualCredits: number;
+  runtimeSeconds: number;
+  retryCount: number;
   vendorCostUsd: number;
   approvalsTriggered: number;
   summary: string;
@@ -145,7 +158,9 @@ const accounts: BrowserAutomationAccount[] = [
     slug: "harbor-legal-group",
     name: "Harbor Legal Group",
     vertical: "Legal Operations",
+    planType: "operator",
     planName: "Operator Deployment",
+    billingStatus: "active",
     monthlyCredits: 1800,
     availableCredits: 942,
     softLimitCredits: 200,
@@ -156,13 +171,20 @@ const accounts: BrowserAutomationAccount[] = [
     seats: 6,
     status: "active",
     concurrencyLimit: 3,
+    canPublish: true,
+    trialStartedAt: null,
+    trialExpiresAt: null,
+    trialCreditsTotal: 0,
+    trialCreditsRemaining: 0,
   },
   {
     id: "acct_northshore",
     slug: "northshore-clinics",
     name: "Northshore Clinics",
     vertical: "Healthcare Admin",
+    planType: "scale",
     planName: "Portfolio Rollout",
+    billingStatus: "active",
     monthlyCredits: 4200,
     availableCredits: 2380,
     softLimitCredits: 400,
@@ -173,6 +195,11 @@ const accounts: BrowserAutomationAccount[] = [
     seats: 14,
     status: "active",
     concurrencyLimit: 6,
+    canPublish: true,
+    trialStartedAt: null,
+    trialExpiresAt: null,
+    trialCreditsTotal: 0,
+    trialCreditsRemaining: 0,
   },
 ];
 
@@ -317,10 +344,13 @@ const runs: BrowserAutomationRun[] = [
     accountSlug: "harbor-legal-group",
     workflowSlug: "case-intake-routing",
     requestedBy: "Maya Chen",
+    runClass: "heavy",
     status: "awaiting_approval",
     startedAt: "2026-06-10T12:08:00Z",
     estimatedCredits: 96,
     actualCredits: 71,
+    runtimeSeconds: 612,
+    retryCount: 1,
     vendorCostUsd: 12.84,
     approvalsTriggered: 1,
     summary: "Qualified two intake submissions and paused before outbound client confirmation.",
@@ -340,11 +370,14 @@ const runs: BrowserAutomationRun[] = [
     accountSlug: "harbor-legal-group",
     workflowSlug: "court-portal-status-checks",
     requestedBy: "Maya Chen",
+    runClass: "standard",
     status: "completed",
     startedAt: "2026-06-10T09:42:00Z",
     completedAt: "2026-06-10T09:56:00Z",
     estimatedCredits: 44,
     actualCredits: 38,
+    runtimeSeconds: 840,
+    retryCount: 0,
     vendorCostUsd: 6.72,
     approvalsTriggered: 0,
     summary: "Captured eight portal updates and synced six status changes into the internal tracker.",
@@ -363,10 +396,13 @@ const runs: BrowserAutomationRun[] = [
     accountSlug: "northshore-clinics",
     workflowSlug: "benefits-verification-queue",
     requestedBy: "Ari Gomez",
+    runClass: "heavy",
     status: "running",
     startedAt: "2026-06-10T12:16:00Z",
     estimatedCredits: 118,
     actualCredits: 64,
+    runtimeSeconds: 1080,
+    retryCount: 1,
     vendorCostUsd: 14.91,
     approvalsTriggered: 0,
     summary: "Payer portal verification in progress across the afternoon appointment queue.",
@@ -385,10 +421,13 @@ const runs: BrowserAutomationRun[] = [
     accountSlug: "northshore-clinics",
     workflowSlug: "payer-exception-escalations",
     requestedBy: "Ari Gomez",
+    runClass: "standard",
     status: "paused",
     startedAt: "2026-06-11T08:22:00Z",
     estimatedCredits: 62,
     actualCredits: 12,
+    runtimeSeconds: 210,
+    retryCount: 0,
     vendorCostUsd: 2.91,
     approvalsTriggered: 0,
     summary: "Draft escalation workflow paused because Gmail production credential is not healthy.",

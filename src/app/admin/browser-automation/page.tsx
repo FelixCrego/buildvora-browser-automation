@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { Panel, StatCard, StatusPill } from "@/components/browser-automation-console";
-import { getAdminControlPlaneSnapshot, getBrowserAutomationRuns } from "@/lib/browserAutomationPortal";
+import {
+  getAdminControlPlaneSnapshot,
+  getAdminEconomicsSnapshot,
+  getBrowserAutomationRuns,
+} from "@/lib/browserAutomationPortal";
 
 function tone(status: string) {
   if (status === "completed" || status === "healthy" || status === "active") return "green" as const;
@@ -12,6 +16,7 @@ function tone(status: string) {
 
 export default function BrowserAutomationAdminPage() {
   const snapshot = getAdminControlPlaneSnapshot();
+  const economics = getAdminEconomicsSnapshot();
   const recentRuns = getBrowserAutomationRuns().slice(0, 4);
 
   return (
@@ -22,6 +27,15 @@ export default function BrowserAutomationAdminPage() {
         <StatCard label="Worker Alerts" value={String(snapshot.totals.degradedWorkers)} detail="Workers requiring intervention before throughput or reliability degrades further." />
         <StatCard label="Draft Workflows" value={String(snapshot.totals.drafts)} detail="Unpublished workflow versions awaiting release review or credential readiness." />
         <StatCard label="Credits Available" value={snapshot.totals.totalCreditsAvailable.toLocaleString()} detail="Aggregate client balance before soft-limit and overage rules apply." />
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
+        <StatCard label="MRR" value={`$${economics.totals.mrrUsd.toLocaleString()}`} detail="Plan revenue at the current account mix." />
+        <StatCard label="Trial Accounts" value={String(economics.totals.trialAccounts)} detail="Self-serve workspaces still inside the 3-day trial." />
+        <StatCard label="Trial → Paid" value={`${economics.totals.trialToPaidConversionRate}%`} detail="Current conversion mix based on active paid vs trial accounts." />
+        <StatCard label="Credits Burned" value={economics.totals.creditsBurned.toLocaleString()} detail="Settled run usage across all accounts." />
+        <StatCard label="Avg Revenue / Run" value={`$${economics.totals.averageRevenuePerRunUsd}`} detail="Estimated revenue equivalent based on plan credit value." />
+        <StatCard label="Gross Margin" value={`$${economics.totals.grossMarginUsd.toLocaleString()}`} detail="Estimated revenue minus vendor cost across completed runs." />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
@@ -58,18 +72,46 @@ export default function BrowserAutomationAdminPage() {
         </Panel>
       </div>
 
+      <Panel title="Run economics" kicker="Margin tracking">
+        <div className="overflow-hidden rounded-[1.5rem] border border-slate-200">
+          <div className="grid grid-cols-[0.8fr_0.6fr_0.8fr_0.9fr_0.9fr_0.9fr] gap-4 bg-[#f5f5f7] px-5 py-3 text-[10px] uppercase tracking-[0.18em] text-slate-500">
+            <span>Run class</span>
+            <span>Runs</span>
+            <span>Credits</span>
+            <span>Revenue</span>
+            <span>Cost</span>
+            <span>Gross margin</span>
+          </div>
+          {economics.runsByClass.map((row) => (
+            <div key={row.runClass} className="grid grid-cols-[0.8fr_0.6fr_0.8fr_0.9fr_0.9fr_0.9fr] gap-4 border-t border-slate-200 bg-white px-5 py-4 text-sm text-slate-600">
+              <div>
+                <StatusPill tone={row.runClass === "light" ? "green" : row.runClass === "standard" ? "blue" : "amber"}>
+                  {row.runClass}
+                </StatusPill>
+              </div>
+              <div>{row.runs}</div>
+              <div>{row.creditsBurned}</div>
+              <div>${row.revenueUsd}</div>
+              <div>${row.costUsd}</div>
+              <div className="font-semibold text-slate-950">${row.grossMarginUsd}</div>
+            </div>
+          ))}
+        </div>
+      </Panel>
+
       <Panel title="Live run queue" kicker="Execution operations">
         <div className="overflow-hidden rounded-[1.5rem] border border-slate-200">
-          <div className="grid grid-cols-[1.1fr_1fr_0.9fr_0.8fr_0.8fr_0.8fr] gap-4 bg-[#f5f5f7] px-5 py-3 text-[10px] uppercase tracking-[0.18em] text-slate-500">
+          <div className="grid grid-cols-[1.1fr_1fr_0.8fr_0.9fr_0.8fr_0.8fr_0.8fr] gap-4 bg-[#f5f5f7] px-5 py-3 text-[10px] uppercase tracking-[0.18em] text-slate-500">
             <span>Run / Workflow</span>
             <span>Account</span>
+            <span>Class</span>
             <span>Worker / Lane</span>
             <span>Status</span>
             <span>Credits</span>
             <span>Controls</span>
           </div>
           {recentRuns.map((run) => (
-            <div key={run.id} className="grid grid-cols-[1.1fr_1fr_0.9fr_0.8fr_0.8fr_0.8fr] gap-4 border-t border-slate-200 bg-white px-5 py-4 text-sm text-slate-600">
+            <div key={run.id} className="grid grid-cols-[1.1fr_1fr_0.8fr_0.9fr_0.8fr_0.8fr_0.8fr] gap-4 border-t border-slate-200 bg-white px-5 py-4 text-sm text-slate-600">
               <div>
                 <p className="font-semibold text-slate-950">{run.id}</p>
                 <p className="mt-1">{run.workflowSlug}</p>
@@ -77,6 +119,11 @@ export default function BrowserAutomationAdminPage() {
               <div>
                 <p>{run.accountSlug}</p>
                 <p className="mt-1 text-slate-500">{run.requestedBy}</p>
+              </div>
+              <div className="self-center">
+                <StatusPill tone={run.runClass === "light" ? "green" : run.runClass === "standard" ? "blue" : "amber"}>
+                  {run.runClass}
+                </StatusPill>
               </div>
               <div>
                 <p>{run.workerId}</p>

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { buildWorkspaceSession, SESSION_COOKIE_NAMES } from "@/lib/browserAutomationAuth";
+import { ensureWorkspaceAccount } from "@/lib/browserAutomationPortal";
 
 type LoginPayload = {
   email?: string;
@@ -24,8 +25,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: false, message: "Enter a valid workspace code." }, { status: 400 });
     }
 
-    const session = buildWorkspaceSession({ email, workspaceCode });
-    const nextPath = "/portal/billing";
+    const account = ensureWorkspaceAccount({ email, workspaceCode });
+    const session = buildWorkspaceSession({
+      email,
+      workspaceCode,
+      accountSlug: account.slug,
+      billingStatus: account.billingStatus,
+      billingPlan: account.planType === "trial" ? "trial" : account.planType,
+      billingProvider: account.planType === "trial" ? "trial" : "demo",
+      billingReferenceId: account.planType === "trial" ? `trial:${account.slug}` : null,
+    });
+    const nextPath = session.billingStatus === "trialing" || session.billingStatus === "active"
+      ? "/workspace/browser-automation"
+      : "/portal/billing";
     const response = NextResponse.json({ ok: true, nextPath, session });
 
     response.cookies.set(SESSION_COOKIE_NAMES.email, session.email, { httpOnly: true, sameSite: "lax", path: "/" });

@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { BrowserAutomationSession } from "@/lib/browserAutomationAuth";
 
 export type BillingPlan = {
-  id: "operator" | "scale" | "topup";
+  id: "starter" | "operator" | "scale" | "topup";
   name: string;
   mode: "subscription" | "payment";
   description: string;
@@ -12,6 +12,15 @@ export type BillingPlan = {
   creditsAmount: number;
   chargeAmountUsd: string;
   accent: string;
+};
+
+export type TrialPolicy = {
+  name: string;
+  durationDays: number;
+  credits: number;
+  maxConcurrentRuns: number;
+  canPublish: boolean;
+  cardRequired: boolean;
 };
 
 export type BillingCoupon = {
@@ -44,6 +53,17 @@ type PayPalWebhookVerificationResponse = {
 };
 
 export const BILLING_PLANS: BillingPlan[] = [
+  {
+    id: "starter",
+    name: "Starter",
+    mode: "subscription",
+    description: "For first live automations and small teams moving from test runs into controlled production usage.",
+    monthlyLabel: "$99 / month",
+    creditsLabel: "100 monthly credits",
+    creditsAmount: 100,
+    chargeAmountUsd: "99.00",
+    accent: "Start live",
+  },
   {
     id: "operator",
     name: "Operator",
@@ -80,6 +100,86 @@ export const BILLING_PLANS: BillingPlan[] = [
     accent: "Burst capacity",
   },
 ];
+
+export const TRIAL_POLICY: TrialPolicy = {
+  name: "Free Trial",
+  durationDays: 3,
+  credits: 25,
+  maxConcurrentRuns: 1,
+  canPublish: false,
+  cardRequired: false,
+};
+
+export const CREDIT_EXPLAINER = {
+  voiceBuild: 5,
+  workflowPublish: 10,
+  lightRun: 10,
+  standardRun: 18,
+  heavyRun: 30,
+  approvalCheckpoint: 3,
+  retry: 8,
+} as const;
+
+export const BILLING_FAQ = [
+  {
+    question: "What uses credits?",
+    answer:
+      "Workflow building, publishing, test runs, production runs, retries, approvals, and advanced verification all use credits.",
+  },
+  {
+    question: "Do you charge by runtime?",
+    answer:
+      "Not directly. Longer or more complex browser sessions may use more credits, but billing is always shown in credits rather than per-minute charges.",
+  },
+  {
+    question: "What happens if a run is more complex than expected?",
+    answer:
+      "We reserve an estimated number of credits before a run starts and settle the actual usage when the run finishes. Unused reserved credits are released back to the workspace.",
+  },
+  {
+    question: "Can I see usage before I run something?",
+    answer:
+      "Yes. Every launch shows an estimated credit burn before execution starts.",
+  },
+  {
+    question: "What happens when I run out of credits?",
+    answer: "Upgrade your plan or buy top-up credits to keep running browser automations.",
+  },
+] as const;
+
+export function getPricingCards() {
+  return [
+    {
+      id: "trial",
+      name: TRIAL_POLICY.name,
+      price: "$0",
+      sublabel: `${TRIAL_POLICY.durationDays} days`,
+      credits: `${TRIAL_POLICY.credits} credits included`,
+      bullets: [
+        "Voice builder and test runs",
+        "1 workspace and 1 concurrent run",
+        "No production publishing during trial",
+      ],
+      cta: "Start free",
+    },
+    ...BILLING_PLANS.map((plan) => ({
+      id: plan.id,
+      name: plan.name,
+      price: plan.monthlyLabel,
+      sublabel: plan.accent,
+      credits: plan.creditsLabel,
+      bullets:
+        plan.id === "starter"
+          ? ["Best for first live automations", "Buy extra credits anytime", "Simple monthly entry point"]
+          : plan.id === "operator"
+            ? ["For recurring workflows and active teams", "Approvals, evidence, and run controls", "Better value per credit"]
+            : plan.id === "scale"
+              ? ["For multi-workflow deployments", "Higher concurrency and priority support", "Built for production rollouts"]
+              : ["One-time credit bundle", "Burst capacity for overages", "Does not change your base plan"],
+      cta: plan.id === "topup" ? "Buy credits" : "Choose plan",
+    })),
+  ];
+}
 
 export const BILLING_COUPONS: BillingCoupon[] = [
   {

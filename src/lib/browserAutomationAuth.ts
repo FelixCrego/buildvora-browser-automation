@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { getBrowserAutomationAccounts } from "@/lib/browserAutomationPortal";
 
-export type BillingStatus = "inactive" | "trialing" | "active";
+export type BillingStatus = "inactive" | "trialing" | "active" | "past_due";
 
 export type BrowserAutomationSession = {
   email: string;
@@ -9,7 +9,7 @@ export type BrowserAutomationSession = {
   accountSlug: string;
   billingStatus: BillingStatus;
   billingPlan: string | null;
-  billingProvider: "paypal" | "demo" | "coupon";
+  billingProvider: "paypal" | "demo" | "coupon" | "trial";
   billingReferenceId: string | null;
   signedInAt: string;
 };
@@ -43,15 +43,16 @@ function resolveAccountSlug(workspaceCode: string) {
 export function buildWorkspaceSession(input: {
   email: string;
   workspaceCode: string;
+  accountSlug?: string;
   billingStatus?: BillingStatus;
   billingPlan?: string | null;
-  billingProvider?: "paypal" | "demo" | "coupon";
+  billingProvider?: "paypal" | "demo" | "coupon" | "trial";
   billingReferenceId?: string | null;
 }) {
   return {
     email: input.email.trim().toLowerCase(),
     workspaceCode: normalizeWorkspaceCode(input.workspaceCode),
-    accountSlug: resolveAccountSlug(input.workspaceCode),
+    accountSlug: input.accountSlug ?? resolveAccountSlug(input.workspaceCode),
     billingStatus: input.billingStatus ?? "inactive",
     billingPlan: input.billingPlan ?? null,
     billingProvider: input.billingProvider ?? "demo",
@@ -75,14 +76,19 @@ export async function getWorkspaceSession() {
     return null;
   }
 
+  const account = getBrowserAutomationAccounts().find((item) => item.slug === accountSlug);
+  const accountBillingStatus = account?.billingStatus;
+  const accountPlan = account?.planType;
+  const accountProvider = account?.planType === "trial" ? "trial" : undefined;
+
   return {
     email,
     workspaceCode,
     accountSlug,
     signedInAt,
-    billingStatus: (cookieStore.get(SESSION_COOKIE_NAMES.billingStatus)?.value as BillingStatus | undefined) ?? "inactive",
-    billingPlan: cookieStore.get(SESSION_COOKIE_NAMES.billingPlan)?.value ?? null,
-    billingProvider: (cookieStore.get(SESSION_COOKIE_NAMES.billingProvider)?.value as "paypal" | "demo" | "coupon" | undefined) ?? "demo",
+    billingStatus: accountBillingStatus ?? (cookieStore.get(SESSION_COOKIE_NAMES.billingStatus)?.value as BillingStatus | undefined) ?? "inactive",
+    billingPlan: accountPlan ?? cookieStore.get(SESSION_COOKIE_NAMES.billingPlan)?.value ?? null,
+    billingProvider: accountProvider ?? (cookieStore.get(SESSION_COOKIE_NAMES.billingProvider)?.value as "paypal" | "demo" | "coupon" | "trial" | undefined) ?? "demo",
     billingReferenceId:
       cookieStore.get(SESSION_COOKIE_NAMES.billingReferenceId)?.value ??
       cookieStore.get("buildvora_ba_stripe_customer_id")?.value ??

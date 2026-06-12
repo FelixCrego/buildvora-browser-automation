@@ -1,9 +1,11 @@
 import { Panel, StatusPill } from "@/components/browser-automation-console";
 import BrowserAutomationApprovalActions from "@/components/browser-automation-approval-actions";
-import { getAccountApprovals, getPrimaryWorkspaceAccount } from "@/lib/browserAutomationPortal";
+import { getWorkspaceSession } from "@/lib/browserAutomationAuth";
+import { getAccountApprovals, getAccountBySlug, getPrimaryWorkspaceAccount } from "@/lib/browserAutomationPortal";
 
-export default function BrowserAutomationApprovalsPage() {
-  const account = getPrimaryWorkspaceAccount();
+export default async function BrowserAutomationApprovalsPage() {
+  const session = await getWorkspaceSession();
+  const account = session ? getAccountBySlug(session.accountSlug) ?? getPrimaryWorkspaceAccount() : getPrimaryWorkspaceAccount();
   const approvals = getAccountApprovals(account.slug);
 
   return (

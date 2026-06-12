@@ -11,9 +11,12 @@ export default function BrowserAutomationLaunchSimulator({
   const [targetCount, setTargetCount] = useState("8");
   const [verificationMode, setVerificationMode] = useState<"standard" | "heavy">("standard");
   const [result, setResult] = useState<null | {
+    runClass: "light" | "standard" | "heavy";
     estimatedCredits: number;
     estimatedVendorCostUsd: number;
     holdCredits: number;
+    breakdown: Array<{ label: string; credits: number }>;
+    explanation: string;
     projectedStatus: string;
   }>(null);
   const [runId, setRunId] = useState<string | null>(null);
@@ -45,9 +48,12 @@ export default function BrowserAutomationLaunchSimulator({
           ok?: boolean;
           message?: string;
           launch?: {
+            runClass: "light" | "standard" | "heavy";
             estimatedCredits: number;
             estimatedVendorCostUsd: number;
             holdCredits: number;
+            breakdown: Array<{ label: string; credits: number }>;
+            explanation: string;
             projectedStatus: string;
           };
           run?: {
@@ -111,22 +117,37 @@ export default function BrowserAutomationLaunchSimulator({
         >
           {isPending ? "Launching..." : "Launch Workflow"}
         </button>
-        <p className="self-center text-sm text-slate-300">This previews the reserve-before-run billing pattern for a real launch.</p>
+        <p className="self-center text-sm text-slate-300">Customers see estimated credits before launch. Runtime, approvals, and retries are already priced into the run class.</p>
       </div>
       {result ? (
         <div className="mt-5 grid gap-3 md:grid-cols-3">
           <div className="rounded-[1.2rem] border border-white/10 bg-[#07101b] p-4">
             <p className="text-[10px] uppercase tracking-[0.22em] text-slate-400">Estimated Credits</p>
             <p className="mt-2 text-2xl font-semibold text-white">{result.estimatedCredits}</p>
+            <p className="mt-2 text-sm uppercase tracking-[0.18em] text-cyan-100">{result.runClass} run</p>
           </div>
           <div className="rounded-[1.2rem] border border-white/10 bg-[#07101b] p-4">
             <p className="text-[10px] uppercase tracking-[0.22em] text-slate-400">Temporary Hold</p>
             <p className="mt-2 text-2xl font-semibold text-white">{result.holdCredits}</p>
+            <p className="mt-2 text-sm text-slate-400">{result.explanation}</p>
           </div>
           <div className="rounded-[1.2rem] border border-white/10 bg-[#07101b] p-4">
             <p className="text-[10px] uppercase tracking-[0.22em] text-slate-400">Projected Status</p>
             <p className="mt-2 text-sm font-semibold uppercase tracking-[0.18em] text-cyan-100">{result.projectedStatus.replace(/_/g, " ")}</p>
             <p className="mt-2 text-sm text-slate-400">${result.estimatedVendorCostUsd.toFixed(2)} est. vendor cost</p>
+          </div>
+        </div>
+      ) : null}
+      {result ? (
+        <div className="mt-4 rounded-[1.2rem] border border-white/10 bg-[#07101b] p-4 text-sm text-slate-300">
+          <p className="font-semibold text-white">Estimate breakdown</p>
+          <div className="mt-3 grid gap-2">
+            {result.breakdown.map((item) => (
+              <div key={item.label} className="flex items-center justify-between gap-3 rounded-[0.9rem] border border-white/8 bg-white/5 px-3 py-2">
+                <span>{item.label}</span>
+                <span>{item.credits} credits</span>
+              </div>
+            ))}
           </div>
         </div>
       ) : null}

@@ -4,6 +4,7 @@ import { getWorkspaceSession } from "@/lib/browserAutomationAuth";
 
 type CheckoutPayload = {
   planId?: string;
+  couponCode?: string | null;
 };
 
 export async function POST(request: Request) {
@@ -22,6 +23,7 @@ export async function POST(request: Request) {
       planId: payload.planId,
       session,
       origin: new URL(request.url).origin,
+      couponCode: payload.couponCode ?? null,
     });
 
     return NextResponse.json({ ok: true, ...checkout });

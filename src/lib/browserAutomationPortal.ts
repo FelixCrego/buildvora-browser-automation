@@ -8,9 +8,11 @@ import {
   createPlaywrightAdapter,
   CreditLimitError,
 } from "@buildvora/browser-automation";
+import { CREDIT_EXPLAINER, TRIAL_POLICY } from "./browserAutomationBilling";
 import type {
   AuditEvent,
   AuditSeverity,
+  BillingState,
   BrowserAutomationAccount,
   BrowserAutomationApproval,
   BrowserAutomationConnection,
@@ -18,7 +20,9 @@ import type {
   BrowserAutomationWorkflow,
   ConnectionStatus,
   CreditLedgerEntry,
+  PlanType,
   RiskLevel,
+  RunClass,
   RunStatus,
   WorkerNode,
   WorkflowVersion,
@@ -131,6 +135,39 @@ type BrowserAutomationState = {
   creditHolds: StoredCreditHold[];
 };
 
+type RunMeteringEstimate = {
+  runClass: RunClass;
+  estimatedCredits: number;
+  holdCredits: number;
+  estimatedVendorCostUsd: number;
+  breakdown: Array<{ label: string; credits: number }>;
+  explanation: string;
+};
+
+type AdminEconomicsSnapshot = {
+  totals: {
+    mrrUsd: number;
+    creditsSold: number;
+    creditsBurned: number;
+    creditsGranted: number;
+    trialAccounts: number;
+    activeAccounts: number;
+    trialToPaidConversionRate: number;
+    averageCreditsPerRun: number;
+    averageRevenuePerRunUsd: number;
+    averageCostPerRunUsd: number;
+    grossMarginUsd: number;
+  };
+  runsByClass: Array<{
+    runClass: RunClass;
+    runs: number;
+    creditsBurned: number;
+    revenueUsd: number;
+    costUsd: number;
+    grossMarginUsd: number;
+  }>;
+};
+
 type LaunchPayload = {
   workflowSlug: string;
   targetCount?: number;
@@ -177,6 +214,43 @@ function deepClone<T>(value: T): T {
 
 function nowIso() {
   return new Date().toISOString();
+}
+
+function slugify(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 48);
+}
+
+function plusDaysIso(days: number) {
+  return new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
+}
+
+function resolveWorkspaceIdentity(input: { email: string; workspaceCode: string }, state: BrowserAutomationState) {
+  const normalizedCode = input.workspaceCode.trim().toUpperCase();
+  const normalizedEmail = input.email.trim().toLowerCase();
+  const domain = normalizedEmail.split("@")[1] ?? "client-workspace.local";
+
+  if (normalizedCode.startsWith("NSC") || domain.includes("northshore")) {
+    return {
+      accountSlug: state.accounts.find((account) => account.slug === "northshore-clinics")?.slug ?? "northshore-clinics",
+      isExisting: true,
+    };
+  }
+
+  if (normalizedCode.startsWith("HLG") || normalizedCode.startsWith("HARBOR") || domain.includes("harbor")) {
+    return {
+      accountSlug: state.accounts.find((account) => account.slug === "harbor-legal-group")?.slug ?? "harbor-legal-group",
+      isExisting: true,
+    };
+  }
+
+  return {
+    accountSlug: `${slugify(domain.replace(/\.[a-z]+$/i, "")) || "trial-workspace"}-${slugify(normalizedCode).slice(0, 10) || "trial"}`,
+    isExisting: false,
+  };
 }
 
 function resolveStateFilePath() {
@@ -273,7 +347,36 @@ function getBalanceFromLedger(state: BrowserAutomationState, accountSlug: string
     .reduce((sum, entry) => sum + entry.amount, 0);
 }
 
+function syncAccountLifecycle(state: BrowserAutomationState) {
+  const now = Date.now();
+
+  for (const account of state.accounts) {
+    if (account.planType === "trial") {
+      const trialExpiresAt = account.trialExpiresAt ? Date.parse(account.trialExpiresAt) : null;
+      const trialExpired = trialExpiresAt !== null && trialExpiresAt <= now;
+
+      account.trialCreditsRemaining = Math.max(0, Math.min(account.trialCreditsTotal, getBalanceFromLedger(state, account.slug)));
+      account.canPublish = false;
+      account.concurrencyLimit = TRIAL_POLICY.maxConcurrentRuns;
+
+      if (trialExpired) {
+        account.billingStatus = "inactive";
+        account.status = "restricted";
+      } else {
+        account.billingStatus = "trialing";
+        account.status = "trial";
+      }
+    } else if (account.billingStatus !== "past_due") {
+      account.billingStatus = "active";
+      account.status = "active";
+      account.canPublish = true;
+    }
+  }
+}
+
 function syncAccountDerivedFields(state: BrowserAutomationState) {
+  syncAccountLifecycle(state);
+
   for (const account of state.accounts) {
     account.availableCredits = getBalanceFromLedger(state, account.slug);
     account.pendingApprovals = state.approvals.filter(
@@ -396,16 +499,34 @@ function syncPublicRunRecord(state: BrowserAutomationState, runtimeRun: StoredRu
   }
 
   const approvalCount = state.approvals.filter((approval) => approval.runId === runtimeRun.runId).length;
+  const runtimeSeconds =
+    runtimeRun.result.completedAt
+      ? Math.max(
+          1,
+          Math.round(
+            (Date.parse(runtimeRun.result.completedAt) - Date.parse(runtimeRun.result.startedAt)) / 1000,
+          ),
+        )
+      : Math.max(60, runtimeRun.result.stepResults.length * 90);
+  const runClass: RunClass =
+    runtimeRun.result.credits.estimated <= 12
+      ? "light"
+      : runtimeRun.result.credits.estimated <= 22
+        ? "standard"
+        : "heavy";
   const runRecord: BrowserAutomationRun = {
     id: runtimeRun.runId,
     accountSlug: runtimeRun.accountId,
     workflowSlug: runtimeRun.workflowSlug,
     requestedBy: runtimeRun.actor,
+    runClass,
     status: runtimeRun.result.status,
     startedAt: runtimeRun.result.startedAt,
     completedAt: runtimeRun.result.completedAt ?? undefined,
     estimatedCredits: runtimeRun.result.credits.estimated,
     actualCredits: runtimeRun.result.credits.actualBurn,
+    runtimeSeconds,
+    retryCount: 0,
     vendorCostUsd: Number((runtimeRun.result.credits.actualBurn * 0.17).toFixed(2)),
     approvalsTriggered: approvalCount,
     summary: summaryForRun(runtimeRun, workflow),
@@ -1023,7 +1144,7 @@ function buildControlPlaneSnapshot(state: BrowserAutomationState) {
     ["running", "awaiting_approval", "queued", "paused"].includes(run.status),
   ).length;
   const pendingApprovals = state.approvals.filter((approval) => approval.status === "pending").length;
-  const monthlyRevenue = state.accounts.reduce((sum, account) => sum + account.monthlySpendUsd, 0);
+  const monthlyRevenue = state.accounts.reduce((sum, account) => sum + getPlanRevenueMonthly(account), 0);
   const degradedWorkers = state.workers.filter((worker) => worker.status !== "healthy").length;
   const queueDepth = state.workers.reduce((sum, worker) => sum + worker.queueDepth, 0);
   const drafts = state.workflows.filter((workflow) => workflow.state === "draft").length;
@@ -1092,7 +1213,9 @@ export function getAuditEvents() {
 }
 
 export function getAccountBySlug(accountSlug: string) {
-  return readState().accounts.find((account) => account.slug === accountSlug) ?? null;
+  const state = readState();
+  syncAccountDerivedFields(state);
+  return state.accounts.find((account) => account.slug === accountSlug) ?? null;
 }
 
 export function getWorkflowBySlug(workflowSlug: string) {
@@ -1109,6 +1232,73 @@ export function getRunById(runId: string) {
 
 export function getPrimaryWorkspaceAccount() {
   return getBrowserAutomationAccounts()[0];
+}
+
+export function ensureWorkspaceAccount(input: { email: string; workspaceCode: string }) {
+  const state = readState();
+  syncAccountDerivedFields(state);
+
+  const identity = resolveWorkspaceIdentity(input, state);
+  const existing = state.accounts.find((account) => account.slug === identity.accountSlug);
+  if (existing) {
+    return existing;
+  }
+
+  const domain = input.email.trim().toLowerCase().split("@")[1] ?? "client-workspace.local";
+  const accountName = `${domain.split(".")[0].replace(/[-_]/g, " ").replace(/\b\w/g, (char) => char.toUpperCase())} Trial Workspace`;
+  const startedAt = nowIso();
+  const expiresAt = plusDaysIso(TRIAL_POLICY.durationDays);
+
+  const trialAccount: BrowserAutomationAccount = {
+    id: `acct_${randomUUID().slice(0, 8)}`,
+    slug: identity.accountSlug,
+    name: accountName,
+    vertical: "Self-Serve Trial",
+    planType: "trial",
+    planName: "Free Trial",
+    billingStatus: "trialing",
+    monthlyCredits: TRIAL_POLICY.credits,
+    availableCredits: 0,
+    softLimitCredits: 0,
+    activeWorkflows: 0,
+    pendingApprovals: 0,
+    monthlySpendUsd: 0,
+    renewalDate: expiresAt.slice(0, 10),
+    seats: 1,
+    status: "trial",
+    concurrencyLimit: TRIAL_POLICY.maxConcurrentRuns,
+    canPublish: false,
+    trialStartedAt: startedAt,
+    trialExpiresAt: expiresAt,
+    trialCreditsTotal: TRIAL_POLICY.credits,
+    trialCreditsRemaining: TRIAL_POLICY.credits,
+  };
+
+  state.accounts.unshift(trialAccount);
+  state.creditLedger.unshift({
+    id: `led_${randomUUID().slice(0, 8)}`,
+    accountSlug: trialAccount.slug,
+    type: "grant",
+    amount: TRIAL_POLICY.credits,
+    balanceAfter: TRIAL_POLICY.credits,
+    createdAt: startedAt,
+    note: `${TRIAL_POLICY.durationDays}-day free trial credit grant`,
+    source: "billing",
+  });
+  state.auditEvents.unshift({
+    id: `aud_${randomUUID().slice(0, 8)}`,
+    accountSlug: trialAccount.slug,
+    actor: "system",
+    event: "trial.started",
+    target: trialAccount.slug,
+    createdAt: startedAt,
+    severity: "info",
+    detail: `${TRIAL_POLICY.credits} trial credits granted through the ${TRIAL_POLICY.durationDays}-day self-serve trial.`,
+  });
+
+  syncAccountDerivedFields(state);
+  writeState(state);
+  return state.accounts.find((account) => account.slug === trialAccount.slug) ?? trialAccount;
 }
 
 export function getAccountWorkflows(accountSlug: string) {
@@ -1146,6 +1336,144 @@ export function getAdminControlPlaneSnapshot() {
   return buildControlPlaneSnapshot(state);
 }
 
+function inferApprovalCount(workflow: BrowserAutomationWorkflow) {
+  if (workflow.riskLevel === "high" || !/no approval needed/i.test(workflow.approvalPolicy)) {
+    return 1;
+  }
+
+  return 0;
+}
+
+function estimateMeteringForWorkflow(input: {
+  workflow: BrowserAutomationWorkflow;
+  targetCount: number;
+  verificationMode: "standard" | "heavy";
+}): RunMeteringEstimate {
+  const { workflow, targetCount, verificationMode } = input;
+  const executionBlocks = Math.max(1, Math.ceil(targetCount / 4));
+  const stepRate = workflow.riskLevel === "high" ? 3 : workflow.riskLevel === "medium" ? 2 : 1;
+  const approvalCount = inferApprovalCount(workflow);
+  const launchFee = 5;
+  const stepCredits = executionBlocks * stepRate;
+  const verificationCredits = verificationMode === "heavy" ? 5 : 2;
+  const approvalCredits = approvalCount * CREDIT_EXPLAINER.approvalCheckpoint;
+  const runtimeBandCredits = targetCount > 20 ? 7 : targetCount > 10 ? 3 : 0;
+  const estimatedCredits = launchFee + stepCredits + verificationCredits + approvalCredits + runtimeBandCredits;
+  const runClass: RunClass =
+    estimatedCredits <= 12 ? "light" : estimatedCredits <= 22 ? "standard" : "heavy";
+  const runClassFloor =
+    runClass === "light"
+      ? CREDIT_EXPLAINER.lightRun
+      : runClass === "standard"
+        ? CREDIT_EXPLAINER.standardRun
+        : CREDIT_EXPLAINER.heavyRun;
+  const finalCredits = Math.max(estimatedCredits, runClassFloor);
+  const breakdown = [
+    { label: "Launch fee", credits: launchFee },
+    { label: `${executionBlocks} execution blocks`, credits: stepCredits },
+    { label: verificationMode === "heavy" ? "Heavy verification" : "Standard verification", credits: verificationCredits },
+    ...(approvalCredits > 0 ? [{ label: `${approvalCount} approval gate`, credits: approvalCredits }] : []),
+    ...(runtimeBandCredits > 0 ? [{ label: "Extended runtime buffer", credits: runtimeBandCredits }] : []),
+  ];
+
+  return {
+    runClass,
+    estimatedCredits: finalCredits,
+    holdCredits: finalCredits,
+    estimatedVendorCostUsd: Number((finalCredits * 0.17).toFixed(2)),
+    breakdown,
+    explanation:
+      runClass === "light"
+        ? "Short browser task with standard verification."
+        : runClass === "standard"
+          ? "Multi-step browser run with moderate verification or approval needs."
+          : "Longer or sensitive browser run with deeper verification, runtime buffer, or approval controls.",
+  };
+}
+
+function getPlanRevenueMonthly(account: BrowserAutomationAccount) {
+  const monthlyRevenueByPlan: Record<PlanType, number> = {
+    trial: 0,
+    starter: 99,
+    operator: 499,
+    scale: 1499,
+  };
+
+  return monthlyRevenueByPlan[account.planType] ?? account.monthlySpendUsd;
+}
+
+function getRevenuePerCredit(account: BrowserAutomationAccount) {
+  if (account.planType === "trial") {
+    return 0;
+  }
+
+  if (account.planType === "starter") {
+    return 0.99;
+  }
+
+  if (account.planType === "scale") {
+    return 0.75;
+  }
+
+  return 0.83;
+}
+
+export function getAdminEconomicsSnapshot(): AdminEconomicsSnapshot {
+  const state = readState();
+  syncAccountDerivedFields(state);
+
+  const runs = state.runs.filter((run) => run.actualCredits > 0);
+  const creditsBurned = runs.reduce((sum, run) => sum + run.actualCredits, 0);
+  const creditsGranted = state.creditLedger.filter((entry) => entry.type === "grant").reduce((sum, entry) => sum + entry.amount, 0);
+  const creditsSold = state.creditLedger.filter((entry) => entry.source === "billing" && entry.amount > 0).reduce((sum, entry) => sum + entry.amount, 0);
+  const mrrUsd = state.accounts.reduce((sum, account) => sum + getPlanRevenueMonthly(account), 0);
+  const trialAccounts = state.accounts.filter((account) => account.planType === "trial").length;
+  const activeAccounts = state.accounts.filter((account) => account.planType !== "trial").length;
+  const revenueByRuns = runs.reduce((sum, run) => {
+    const account = state.accounts.find((item) => item.slug === run.accountSlug);
+    return sum + run.actualCredits * (account ? getRevenuePerCredit(account) : 1);
+  }, 0);
+  const costByRuns = runs.reduce((sum, run) => sum + run.vendorCostUsd, 0);
+
+  const runsByClass = (["light", "standard", "heavy"] as RunClass[]).map((runClass) => {
+    const classRuns = runs.filter((run) => run.runClass === runClass);
+    const credits = classRuns.reduce((sum, run) => sum + run.actualCredits, 0);
+    const cost = classRuns.reduce((sum, run) => sum + run.vendorCostUsd, 0);
+    const revenue = classRuns.reduce((sum, run) => {
+      const account = state.accounts.find((item) => item.slug === run.accountSlug);
+      return sum + run.actualCredits * (account ? getRevenuePerCredit(account) : 1);
+    }, 0);
+
+    return {
+      runClass,
+      runs: classRuns.length,
+      creditsBurned: credits,
+      revenueUsd: Number(revenue.toFixed(2)),
+      costUsd: Number(cost.toFixed(2)),
+      grossMarginUsd: Number((revenue - cost).toFixed(2)),
+    };
+  });
+
+  return {
+    totals: {
+      mrrUsd,
+      creditsSold,
+      creditsBurned,
+      creditsGranted,
+      trialAccounts,
+      activeAccounts,
+      trialToPaidConversionRate: Number(
+        ((activeAccounts / Math.max(activeAccounts + trialAccounts, 1)) * 100).toFixed(1),
+      ),
+      averageCreditsPerRun: Number((creditsBurned / Math.max(runs.length, 1)).toFixed(1)),
+      averageRevenuePerRunUsd: Number((revenueByRuns / Math.max(runs.length, 1)).toFixed(2)),
+      averageCostPerRunUsd: Number((costByRuns / Math.max(runs.length, 1)).toFixed(2)),
+      grossMarginUsd: Number((revenueByRuns - costByRuns).toFixed(2)),
+    },
+    runsByClass,
+  };
+}
+
 export function estimateRunLaunch(input: {
   workflowSlug: string;
   targetCount?: number;
@@ -1159,20 +1487,22 @@ export function estimateRunLaunch(input: {
 
   const targetCount = Math.max(1, Math.min(input.targetCount ?? 6, 50));
   const verificationMode = input.verificationMode ?? "standard";
-  const baseCredits = workflow.riskLevel === "high" ? 28 : workflow.riskLevel === "medium" ? 18 : 12;
-  const stepCredits = targetCount * (workflow.riskLevel === "high" ? 5 : 3);
-  const verificationCredits = verificationMode === "heavy" ? 18 : 8;
-  const approvalReserve = workflow.riskLevel === "high" ? 12 : 4;
-  const estimatedCredits = baseCredits + stepCredits + verificationCredits + approvalReserve;
-  const estimatedVendorCostUsd = Number((estimatedCredits * 0.17).toFixed(2));
+  const metering = estimateMeteringForWorkflow({
+    workflow,
+    targetCount,
+    verificationMode,
+  });
 
   return {
     workflow,
     targetCount,
     verificationMode,
-    estimatedCredits,
-    estimatedVendorCostUsd,
-    holdCredits: estimatedCredits,
+    runClass: metering.runClass,
+    estimatedCredits: metering.estimatedCredits,
+    estimatedVendorCostUsd: metering.estimatedVendorCostUsd,
+    holdCredits: metering.holdCredits,
+    breakdown: metering.breakdown,
+    explanation: metering.explanation,
     projectedStatus: workflow.riskLevel === "high" ? "may_pause_for_approval" : "launch_ready",
   };
 }
@@ -1261,11 +1591,30 @@ export function activateAccountBilling(input: {
   }
 
   if (input.billingPlan === "operator") {
+    account.planType = "operator";
     account.planName = "Operator";
     account.monthlyCredits = 1800;
+    account.monthlySpendUsd = 499;
+    account.concurrencyLimit = 3;
   } else if (input.billingPlan === "scale") {
+    account.planType = "scale";
     account.planName = "Scale";
     account.monthlyCredits = 4800;
+    account.monthlySpendUsd = 1499;
+    account.concurrencyLimit = 10;
+  } else if (input.billingPlan === "starter") {
+    account.planType = "starter";
+    account.planName = "Starter";
+    account.monthlyCredits = 100;
+    account.monthlySpendUsd = 99;
+    account.concurrencyLimit = 1;
+  }
+
+  if (input.billingPlan !== "topup") {
+    account.billingStatus = "active";
+    account.status = "active";
+    account.canPublish = true;
+    account.trialCreditsRemaining = 0;
   }
 
   addAuditEvent(state, {

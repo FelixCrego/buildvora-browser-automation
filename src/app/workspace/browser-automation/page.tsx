@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Panel, StatCard, StatusPill } from "@/components/browser-automation-console";
+import { getWorkspaceSession } from "@/lib/browserAutomationAuth";
 import {
+  getAccountBySlug,
   getAccountApprovals,
   getBillingAuditEvents,
   getAccountConnections,
@@ -25,7 +27,8 @@ export default async function BrowserAutomationWorkspacePage({
 }) {
   const params = searchParams ? await searchParams : undefined;
   const showWelcome = params?.welcome === "1";
-  const account = getPrimaryWorkspaceAccount();
+  const session = await getWorkspaceSession();
+  const account = session ? getAccountBySlug(session.accountSlug) ?? getPrimaryWorkspaceAccount() : getPrimaryWorkspaceAccount();
   const workflows = getAccountWorkflows(account.slug);
   const runs = getAccountRuns(account.slug);
   const approvals = getAccountApprovals(account.slug);
@@ -40,12 +43,17 @@ export default async function BrowserAutomationWorkspacePage({
           Payment confirmed. The workspace is unlocked and ready for launches, approvals, and credit-backed execution.
         </div>
       ) : null}
+      {account.planType === "trial" ? (
+        <div className="rounded-[1.7rem] border border-blue-200 bg-[#f1f7ff] px-5 py-4 text-sm text-slate-700">
+          Free trial active. You have {account.trialCreditsRemaining} of {account.trialCreditsTotal} trial credits left through {account.trialExpiresAt?.slice(0, 10)}. Production publishing stays locked until you upgrade.
+        </div>
+      ) : null}
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Available Credits" value={account.availableCredits.toLocaleString()} detail={`${account.monthlyCredits.toLocaleString()} monthly credits on the ${account.planName} plan.`} />
+        <StatCard label="Available Credits" value={account.availableCredits.toLocaleString()} detail={`${account.monthlyCredits.toLocaleString()} included credits on the ${account.planName} plan.`} />
         <StatCard label="Active Workflows" value={String(workflows.length)} detail="Provisioned browser automations now available to launch from this workspace." />
         <StatCard label="Approval Queue" value={String(approvals.length)} detail="Sensitive steps waiting on your review before execution can continue." />
-        <StatCard label="Renewal" value={account.renewalDate} detail="Top-ups and overage billing attach to this renewal cycle." />
+        <StatCard label={account.planType === "trial" ? "Trial Ends" : "Renewal"} value={account.planType === "trial" ? account.trialExpiresAt?.slice(0, 10) ?? "Pending" : account.renewalDate} detail={account.planType === "trial" ? "Upgrade to publish and keep running after the 3-day trial closes." : "Top-ups and overage billing attach to this renewal cycle."} />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.08fr_0.92fr]">

@@ -55,9 +55,9 @@ export default function ClientLoginForm() {
   return (
     <form onSubmit={handleSubmit} className="rounded-[2.5rem] border border-slate-200 bg-white p-7 shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
       <p className="tech text-[10px] uppercase tracking-[0.24em] text-[#0071e3]">Client Sign-In</p>
-      <h2 className="mt-3 text-3xl font-semibold tracking-[-0.03em] text-slate-950">Enter your automation workspace</h2>
+      <h2 className="mt-3 text-3xl font-semibold tracking-[-0.03em] text-slate-950">Start or reopen your automation workspace</h2>
       <p className="mt-3 text-sm leading-relaxed text-slate-600">
-        This is the client-side entry to the credits-based browser automation portal.
+        New workspaces start on a 3-day, 25-credit self-serve trial. Existing paid workspaces reopen directly into the client portal.
       </p>
 
       <div className="mt-6 grid gap-4">
@@ -81,9 +81,9 @@ export default function ClientLoginForm() {
       </div>
 
       <div className="mt-5 rounded-[1.25rem] bg-[#f5f5f7] p-4">
-        <p className="text-sm font-semibold text-slate-950">Launch note</p>
+        <p className="text-sm font-semibold text-slate-950">What happens next</p>
         <p className="mt-2 text-sm leading-relaxed text-slate-600">
-          Sign-in now lands on billing and unlocks the workspace only after a paid plan, top-up, or review activation is confirmed.
+          Self-serve trials go straight into the workspace with 25 credits. Paid workspaces reopen with their active credit balance and billing state.
         </p>
       </div>
 
@@ -92,7 +92,7 @@ export default function ClientLoginForm() {
         disabled={loading}
         className="mt-6 inline-flex rounded-full bg-[#0071e3] px-5 py-3 text-sm font-medium text-white transition hover:bg-[#0077ed] disabled:cursor-not-allowed disabled:opacity-70"
       >
-        {loading ? "Opening Billing..." : "Sign In To Portal"}
+        {loading ? "Opening Workspace..." : "Open Workspace"}
       </button>
       {error ? <p className="mt-4 text-sm text-rose-600">{error}</p> : null}
     </form>

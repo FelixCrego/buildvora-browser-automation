@@ -1,9 +1,7 @@
 import { ConsoleShell } from "@/components/browser-automation-console";
 import { getWorkspaceSession, hasWorkspaceAccess } from "@/lib/browserAutomationAuth";
-import { getPrimaryWorkspaceAccount } from "@/lib/browserAutomationPortal";
+import { getAccountBySlug, getPrimaryWorkspaceAccount } from "@/lib/browserAutomationPortal";
 import { redirect } from "next/navigation";
-
-const account = getPrimaryWorkspaceAccount();
 
 const navLinks = [
   {
@@ -60,6 +58,8 @@ async function WorkspaceLayoutInner({
   if (!hasWorkspaceAccess(session)) {
     redirect("/portal/billing");
   }
+
+  const account = getAccountBySlug(session.accountSlug) ?? getPrimaryWorkspaceAccount();
 
   return (
     <ConsoleShell

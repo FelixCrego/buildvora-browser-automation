@@ -1,5 +1,6 @@
 import { Panel, StatusPill } from "@/components/browser-automation-console";
-import { getAccountConnections, getPrimaryWorkspaceAccount } from "@/lib/browserAutomationPortal";
+import { getWorkspaceSession } from "@/lib/browserAutomationAuth";
+import { getAccountBySlug, getAccountConnections, getPrimaryWorkspaceAccount } from "@/lib/browserAutomationPortal";
 
 function statusTone(status: string) {
   if (status === "healthy") return "green" as const;
@@ -8,8 +9,9 @@ function statusTone(status: string) {
   return "slate" as const;
 }
 
-export default function BrowserAutomationConnectionsPage() {
-  const account = getPrimaryWorkspaceAccount();
+export default async function BrowserAutomationConnectionsPage() {
+  const session = await getWorkspaceSession();
+  const account = session ? getAccountBySlug(session.accountSlug) ?? getPrimaryWorkspaceAccount() : getPrimaryWorkspaceAccount();
   const connections = getAccountConnections(account.slug);
 
   return (
