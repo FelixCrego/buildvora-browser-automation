@@ -1,6 +1,6 @@
 import Link from "next/link";
 import BrowserAutomationBillingControls from "@/components/browser-automation-billing-controls";
-import { BILLING_PLANS, isStripeConfigured } from "@/lib/browserAutomationBilling";
+import { BILLING_PLANS, getBillingProviderLabel } from "@/lib/browserAutomationBilling";
 import { getWorkspaceSession } from "@/lib/browserAutomationAuth";
 import { getAccountBySlug, getPrimaryWorkspaceAccount } from "@/lib/browserAutomationPortal";
 
@@ -18,7 +18,7 @@ export default async function BrowserAutomationBillingPage() {
               Credits-based access controls for the automation workspace.
             </h1>
             <p className="mt-5 text-base leading-relaxed text-slate-600">
-              Clients pay to unlock the workspace, buy credits, and manage renewal without leaving the product. Protected execution stays behind the paywall until billing is active.
+              Clients pay with PayPal to unlock the workspace, buy credits, and keep protected execution behind a real paywall until billing is active.
             </p>
 
             <div className="mt-8 grid gap-3">
@@ -55,7 +55,7 @@ export default async function BrowserAutomationBillingPage() {
               plans={BILLING_PLANS}
               billingStatus={session?.billingStatus ?? "inactive"}
               activePlan={session?.billingPlan ?? null}
-              stripeEnabled={isStripeConfigured()}
+              providerLabel={getBillingProviderLabel()}
             />
           </section>
         </div>
@@ -63,4 +63,3 @@ export default async function BrowserAutomationBillingPage() {
     </main>
   );
 }
-

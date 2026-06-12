@@ -1,4 +1,4 @@
-import Stripe from "stripe";
+import { randomUUID } from "node:crypto";
 import type { BrowserAutomationSession } from "@/lib/browserAutomationAuth";
 
 export type BillingPlan = {
@@ -6,11 +6,29 @@ export type BillingPlan = {
   name: string;
   mode: "subscription" | "payment";
   description: string;
-  priceIdEnv: string;
+  planIdEnv?: string;
   monthlyLabel: string;
   creditsLabel: string;
   creditsAmount: number;
+  chargeAmountUsd: string;
   accent: string;
+};
+
+type PayPalSubscriptionResponse = {
+  id?: string;
+  status?: string;
+  links?: Array<{ href?: string; rel?: string; method?: string }>;
+};
+
+type PayPalOrderResponse = {
+  id?: string;
+  status?: string;
+  links?: Array<{ href?: string; rel?: string; method?: string }>;
+  purchase_units?: Array<{
+    payments?: {
+      captures?: Array<{ id?: string; status?: string; amount?: { value?: string; currency_code?: string } }>;
+    };
+  }>;
 };
 
 export const BILLING_PLANS: BillingPlan[] = [
@@ -19,10 +37,11 @@ export const BILLING_PLANS: BillingPlan[] = [
     name: "Operator",
     mode: "subscription",
     description: "For a single client team running protected browser workflows with approvals and live run support.",
-    priceIdEnv: "STRIPE_PRICE_OPERATOR",
+    planIdEnv: "PAYPAL_PLAN_OPERATOR",
     monthlyLabel: "$1,500 / month",
     creditsLabel: "1,800 monthly credits",
     creditsAmount: 1800,
+    chargeAmountUsd: "1500.00",
     accent: "Best for launch",
   },
   {
@@ -30,42 +49,62 @@ export const BILLING_PLANS: BillingPlan[] = [
     name: "Scale",
     mode: "subscription",
     description: "For multi-workflow deployments with higher concurrency, more operators, and heavier review queues.",
-    priceIdEnv: "STRIPE_PRICE_SCALE",
+    planIdEnv: "PAYPAL_PLAN_SCALE",
     monthlyLabel: "$3,900 / month",
     creditsLabel: "4,800 monthly credits",
     creditsAmount: 4800,
+    chargeAmountUsd: "3900.00",
     accent: "Portfolio rollout",
   },
   {
     id: "topup",
     name: "Credit Top-Up",
     mode: "payment",
-    description: "One-time block of credits for bursts, backfills, or overage protection without changing the base plan.",
-    priceIdEnv: "STRIPE_PRICE_TOPUP",
     monthlyLabel: "$750 one-time",
     creditsLabel: "900 credits",
     creditsAmount: 900,
+    chargeAmountUsd: "750.00",
+    description: "One-time block of credits for bursts, backfills, or overage protection without changing the base plan.",
     accent: "Burst capacity",
   },
 ];
-
-let stripeClient: Stripe | null = null;
 
 export function getBillingPlan(planId: string) {
   return BILLING_PLANS.find((plan) => plan.id === planId) ?? null;
 }
 
-export function isStripeConfigured() {
-  return Boolean(process.env.STRIPE_SECRET_KEY);
+export function isPayPalConfigured() {
+  return Boolean(process.env.PAYPAL_CLIENT_ID && process.env.PAYPAL_CLIENT_SECRET);
 }
 
-export function getStripePriceId(plan: BillingPlan) {
-  return process.env[plan.priceIdEnv];
+export function getPayPalEnvironment() {
+  return process.env.PAYPAL_ENVIRONMENT === "live" ? "live" : "sandbox";
 }
 
-export function getAppOrigin() {
+export function getPayPalBaseUrl() {
+  return getPayPalEnvironment() === "live" ? "https://api-m.paypal.com" : "https://api-m.sandbox.paypal.com";
+}
+
+export function getBillingProviderLabel() {
+  return isPayPalConfigured() ? "PayPal live path ready" : "Review mode fallback active";
+}
+
+export function getAppOrigin(requestUrl?: string) {
+  if (requestUrl) {
+    try {
+      const url = new URL(requestUrl);
+      return url.origin;
+    } catch {
+      // fall through
+    }
+  }
+
   if (process.env.NEXT_PUBLIC_APP_URL) {
     return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
+  }
+
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
+    return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
   }
 
   if (process.env.VERCEL_URL) {
@@ -75,123 +114,244 @@ export function getAppOrigin() {
   return "http://localhost:3000";
 }
 
-export function getStripeClient() {
-  if (!process.env.STRIPE_SECRET_KEY) {
+function getPayPalPlanId(plan: BillingPlan) {
+  return plan.planIdEnv ? process.env[plan.planIdEnv] : undefined;
+}
+
+async function getPayPalAccessToken() {
+  if (!isPayPalConfigured()) {
     return null;
   }
 
-  if (!stripeClient) {
-    stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY);
+  const response = await fetch(`${getPayPalBaseUrl()}/v1/oauth2/token`, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/x-www-form-urlencoded",
+      Authorization: `Basic ${Buffer.from(
+        `${process.env.PAYPAL_CLIENT_ID}:${process.env.PAYPAL_CLIENT_SECRET}`,
+      ).toString("base64")}`,
+    },
+    body: "grant_type=client_credentials",
+  });
+
+  if (!response.ok) {
+    throw new Error(`PayPal auth failed with ${response.status}.`);
   }
 
-  return stripeClient;
+  const payload = (await response.json()) as { access_token?: string };
+  if (!payload.access_token) {
+    throw new Error("PayPal auth did not return an access token.");
+  }
+
+  return payload.access_token;
+}
+
+async function paypalRequest<T>(input: {
+  path: string;
+  method?: string;
+  body?: unknown;
+  preferRepresentation?: boolean;
+}) {
+  const accessToken = await getPayPalAccessToken();
+  if (!accessToken) {
+    throw new Error("PayPal credentials are not configured.");
+  }
+
+  const response = await fetch(`${getPayPalBaseUrl()}${input.path}`, {
+    method: input.method ?? "GET",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+      "PayPal-Request-Id": randomUUID(),
+      ...(input.preferRepresentation ? { Prefer: "return=representation" } : {}),
+    },
+    body: input.body ? JSON.stringify(input.body) : undefined,
+  });
+
+  const payload = (await response.json()) as T & { message?: string; details?: Array<{ issue?: string; description?: string }> };
+  if (!response.ok) {
+    const detail = payload.details?.[0]?.description ?? payload.details?.[0]?.issue ?? payload.message;
+    throw new Error(detail ? `PayPal request failed: ${detail}` : `PayPal request failed with ${response.status}.`);
+  }
+
+  return payload;
+}
+
+function getApprovalLink(links?: Array<{ href?: string; rel?: string }>) {
+  return (
+    links?.find((link) => link.rel === "approve")?.href ??
+    links?.find((link) => link.rel === "payer-action")?.href ??
+    null
+  );
 }
 
 export async function createCheckoutRedirect(input: {
   planId: string;
   session: BrowserAutomationSession;
+  origin?: string;
 }) {
   const plan = getBillingPlan(input.planId);
   if (!plan) {
     throw new Error("Unknown billing plan.");
   }
 
-  const appOrigin = getAppOrigin();
-  const stripe = getStripeClient();
-  const priceId = getStripePriceId(plan);
-
-  if (!stripe || !priceId) {
+  const appOrigin = input.origin ?? getAppOrigin();
+  if (!isPayPalConfigured() || (plan.mode === "subscription" && !getPayPalPlanId(plan))) {
     return {
       mode: "demo" as const,
       url: `${appOrigin}/portal/billing/success?plan=${plan.id}&demo=1`,
     };
   }
 
-  const checkoutSession = await stripe.checkout.sessions.create({
-    mode: plan.mode,
-    allow_promotion_codes: true,
-    success_url: `${appOrigin}/portal/billing/success?session_id={CHECKOUT_SESSION_ID}&plan=${plan.id}`,
-    cancel_url: `${appOrigin}/portal/billing/cancel?plan=${plan.id}`,
-    line_items: [{ price: priceId, quantity: 1 }],
-    client_reference_id: input.session.accountSlug,
-    customer: input.session.stripeCustomerId ?? undefined,
-    customer_email: input.session.stripeCustomerId ? undefined : input.session.email,
-    metadata: {
-      account_slug: input.session.accountSlug,
-      workspace_code: input.session.workspaceCode,
-      billing_plan: plan.id,
-    },
-  });
+  if (plan.mode === "subscription") {
+    const planId = getPayPalPlanId(plan);
+    const subscription = await paypalRequest<PayPalSubscriptionResponse>({
+      path: "/v1/billing/subscriptions",
+      method: "POST",
+      preferRepresentation: true,
+      body: {
+        plan_id: planId,
+        custom_id: input.session.accountSlug,
+        subscriber: {
+          email_address: input.session.email,
+        },
+        application_context: {
+          brand_name: "BuildVora Browser Automation",
+          user_action: "SUBSCRIBE_NOW",
+          return_url: `${appOrigin}/portal/billing/success?plan=${plan.id}`,
+          cancel_url: `${appOrigin}/portal/billing/cancel?plan=${plan.id}`,
+        },
+      },
+    });
 
-  if (!checkoutSession.url) {
-    throw new Error("Stripe checkout did not return a redirect URL.");
-  }
+    const approvalUrl = getApprovalLink(subscription.links);
+    if (!approvalUrl) {
+      throw new Error("PayPal did not return an approval URL for the subscription.");
+    }
 
-  return {
-    mode: "stripe" as const,
-    url: checkoutSession.url,
-  };
-}
-
-export async function createCustomerPortalRedirect(session: BrowserAutomationSession) {
-  const stripe = getStripeClient();
-  if (!stripe || !session.stripeCustomerId) {
     return {
-      mode: "demo" as const,
-      url: `${getAppOrigin()}/portal/billing`,
+      mode: "paypal" as const,
+      url: approvalUrl,
     };
   }
 
-  const portalSession = await stripe.billingPortal.sessions.create({
-    customer: session.stripeCustomerId,
-    return_url: `${getAppOrigin()}/portal/billing`,
+  const order = await paypalRequest<PayPalOrderResponse>({
+    path: "/v2/checkout/orders",
+    method: "POST",
+    preferRepresentation: true,
+    body: {
+      intent: "CAPTURE",
+      purchase_units: [
+        {
+          reference_id: input.session.accountSlug,
+          custom_id: `${input.session.accountSlug}:topup`,
+          description: "BuildVora Browser Automation Credit Top-Up",
+          amount: {
+            currency_code: "USD",
+            value: plan.chargeAmountUsd,
+          },
+        },
+      ],
+      payment_source: {
+        paypal: {
+          experience_context: {
+            brand_name: "BuildVora Browser Automation",
+            user_action: "PAY_NOW",
+            return_url: `${appOrigin}/portal/billing/success?plan=${plan.id}`,
+            cancel_url: `${appOrigin}/portal/billing/cancel?plan=${plan.id}`,
+          },
+        },
+      },
+    },
   });
 
+  const approvalUrl = getApprovalLink(order.links);
+  if (!approvalUrl) {
+    throw new Error("PayPal did not return an approval URL for the order.");
+  }
+
   return {
-    mode: "stripe" as const,
-    url: portalSession.url,
+    mode: "paypal" as const,
+    url: approvalUrl,
+  };
+}
+
+export async function createCustomerPortalRedirect(input: {
+  session: BrowserAutomationSession;
+  origin?: string;
+}) {
+  return {
+    mode: "internal" as const,
+    url: `${input.origin ?? getAppOrigin()}/portal/billing`,
   };
 }
 
 export async function resolveCheckoutActivation(input: {
   planId: string;
-  sessionId?: string | null;
+  token?: string | null;
+  subscriptionId?: string | null;
 }) {
   const plan = getBillingPlan(input.planId);
   if (!plan) {
     throw new Error("Unknown billing plan.");
   }
 
-  const stripe = getStripeClient();
-  if (!stripe || !input.sessionId) {
+  if (!isPayPalConfigured()) {
     return {
       billingStatus: "active" as const,
       billingPlan: plan.id,
-      stripeCustomerId: null,
+      billingReferenceId: null,
       creditsToGrant: plan.mode === "payment" ? plan.creditsAmount : 0,
       source: "demo",
     };
   }
 
-  const checkoutSession = await stripe.checkout.sessions.retrieve(input.sessionId, {
-    expand: ["subscription"],
+  if (plan.mode === "subscription") {
+    const subscriptionId = input.subscriptionId ?? input.token ?? null;
+    if (!subscriptionId) {
+      throw new Error("Missing PayPal subscription reference.");
+    }
+
+    const subscription = await paypalRequest<{ id?: string; status?: string }>({
+      path: `/v1/billing/subscriptions/${subscriptionId}`,
+    });
+
+    if (!subscription.id || !subscription.status || !["ACTIVE", "APPROVAL_PENDING", "APPROVED"].includes(subscription.status)) {
+      throw new Error("PayPal subscription has not completed approval yet.");
+    }
+
+    return {
+      billingStatus: "active" as const,
+      billingPlan: plan.id,
+      billingReferenceId: subscription.id,
+      creditsToGrant: 0,
+      source: "paypal",
+    };
+  }
+
+  const orderId = input.token ?? null;
+  if (!orderId) {
+    throw new Error("Missing PayPal order token.");
+  }
+
+  const capture = await paypalRequest<PayPalOrderResponse>({
+    path: `/v2/checkout/orders/${orderId}/capture`,
+    method: "POST",
+    preferRepresentation: true,
+    body: {},
   });
 
-  const isPaid =
-    checkoutSession.payment_status === "paid" ||
-    checkoutSession.status === "complete" ||
-    Boolean(checkoutSession.subscription);
-
-  if (!isPaid) {
-    throw new Error("Stripe checkout has not completed yet.");
+  if (!capture.id || !["COMPLETED", "APPROVED"].includes(capture.status ?? "")) {
+    throw new Error("PayPal top-up payment could not be captured.");
   }
 
   return {
     billingStatus: "active" as const,
     billingPlan: plan.id,
-    stripeCustomerId: typeof checkoutSession.customer === "string" ? checkoutSession.customer : null,
-    creditsToGrant: plan.mode === "payment" ? plan.creditsAmount : 0,
-    source: "stripe",
+    billingReferenceId: capture.id,
+    creditsToGrant: plan.creditsAmount,
+    source: "paypal",
   };
 }
-

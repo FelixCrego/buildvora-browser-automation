@@ -5,11 +5,13 @@ import { useRouter } from "next/navigation";
 
 export default function BrowserAutomationBillingActivation({
   planId,
-  sessionId,
+  token,
+  subscriptionId,
   demo,
 }: {
   planId: string;
-  sessionId: string | null;
+  token: string | null;
+  subscriptionId: string | null;
   demo: boolean;
 }) {
   const router = useRouter();
@@ -26,7 +28,8 @@ export default function BrowserAutomationBillingActivation({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             planId,
-            sessionId,
+            token,
+            subscriptionId,
           }),
         });
 
@@ -56,7 +59,7 @@ export default function BrowserAutomationBillingActivation({
     return () => {
       cancelled = true;
     };
-  }, [demo, planId, router, sessionId]);
+  }, [demo, planId, router, subscriptionId, token]);
 
   return (
     <div className="rounded-[1.8rem] border border-slate-200 bg-white p-8 shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
@@ -70,4 +73,3 @@ export default function BrowserAutomationBillingActivation({
     </div>
   );
 }
-

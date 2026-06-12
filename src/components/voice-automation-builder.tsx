@@ -181,7 +181,7 @@ export default function VoiceAutomationBuilder() {
           <div className="mt-4 rounded-[1.25rem] bg-[#f5f5f7] p-4">
             <p className="text-sm font-semibold text-slate-950">Launch posture</p>
             <p className="mt-2 text-sm leading-relaxed text-slate-600">
-              This builder is suitable for launch as a scoped-intake and provisioning layer. Persisted workflow creation, auth enforcement, and Stripe-backed credit debits are the next production backend milestones.
+              This builder is suitable for launch as a scoped-intake and provisioning layer. Persisted workflow creation, auth enforcement, and PayPal-backed credit debits are the next production backend milestones.
             </p>
           </div>
           <div className="mt-4 flex flex-wrap gap-3">

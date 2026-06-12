@@ -5,7 +5,8 @@ import { getWorkspaceSession, SESSION_COOKIE_NAMES } from "@/lib/browserAutomati
 
 type ActivatePayload = {
   planId?: string;
-  sessionId?: string | null;
+  token?: string | null;
+  subscriptionId?: string | null;
 };
 
 export async function POST(request: Request) {
@@ -22,7 +23,8 @@ export async function POST(request: Request) {
 
     const activation = await resolveCheckoutActivation({
       planId: payload.planId,
-      sessionId: payload.sessionId ?? null,
+      token: payload.token ?? null,
+      subscriptionId: payload.subscriptionId ?? null,
     });
 
     if (activation.creditsToGrant > 0) {
@@ -42,7 +44,8 @@ export async function POST(request: Request) {
 
     response.cookies.set(SESSION_COOKIE_NAMES.billingStatus, activation.billingStatus, { httpOnly: true, sameSite: "lax", path: "/" });
     response.cookies.set(SESSION_COOKIE_NAMES.billingPlan, activation.billingPlan, { httpOnly: true, sameSite: "lax", path: "/" });
-    response.cookies.set(SESSION_COOKIE_NAMES.stripeCustomerId, activation.stripeCustomerId ?? "", { httpOnly: true, sameSite: "lax", path: "/" });
+    response.cookies.set(SESSION_COOKIE_NAMES.billingProvider, activation.source === "paypal" ? "paypal" : "demo", { httpOnly: true, sameSite: "lax", path: "/" });
+    response.cookies.set(SESSION_COOKIE_NAMES.billingReferenceId, activation.billingReferenceId ?? "", { httpOnly: true, sameSite: "lax", path: "/" });
 
     return response;
   } catch (error) {
@@ -52,4 +55,3 @@ export async function POST(request: Request) {
     );
   }
 }
-

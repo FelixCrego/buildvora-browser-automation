@@ -33,7 +33,8 @@ export async function POST(request: Request) {
     response.cookies.set(SESSION_COOKIE_NAMES.accountSlug, session.accountSlug, { httpOnly: true, sameSite: "lax", path: "/" });
     response.cookies.set(SESSION_COOKIE_NAMES.billingStatus, session.billingStatus, { httpOnly: true, sameSite: "lax", path: "/" });
     response.cookies.set(SESSION_COOKIE_NAMES.billingPlan, session.billingPlan ?? "", { httpOnly: true, sameSite: "lax", path: "/" });
-    response.cookies.set(SESSION_COOKIE_NAMES.stripeCustomerId, session.stripeCustomerId ?? "", { httpOnly: true, sameSite: "lax", path: "/" });
+    response.cookies.set(SESSION_COOKIE_NAMES.billingProvider, session.billingProvider, { httpOnly: true, sameSite: "lax", path: "/" });
+    response.cookies.set(SESSION_COOKIE_NAMES.billingReferenceId, session.billingReferenceId ?? "", { httpOnly: true, sameSite: "lax", path: "/" });
     response.cookies.set(SESSION_COOKIE_NAMES.signedInAt, session.signedInAt, { httpOnly: true, sameSite: "lax", path: "/" });
 
     return response;
@@ -44,4 +45,3 @@ export async function POST(request: Request) {
     );
   }
 }
-

@@ -15,12 +15,12 @@ export default function BrowserAutomationBillingControls({
   plans,
   billingStatus,
   activePlan,
-  stripeEnabled,
+  providerLabel,
 }: {
   plans: Plan[];
   billingStatus: string;
   activePlan: string | null;
-  stripeEnabled: boolean;
+  providerLabel: string;
 }) {
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -92,7 +92,7 @@ export default function BrowserAutomationBillingControls({
             </button>
           ) : null}
           <span className="rounded-full border border-slate-200 bg-white px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-            {stripeEnabled ? "Stripe live path ready" : "Review mode fallback active"}
+            {providerLabel}
           </span>
         </div>
       </div>
@@ -130,4 +130,3 @@ export default function BrowserAutomationBillingControls({
     </div>
   );
 }
-

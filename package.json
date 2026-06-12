@@ -11,6 +11,8 @@
     "start": "next start",
     "lint": "eslint",
     "package:pack": "npm pack --workspace @buildvora/browser-automation",
+    "paypal:auth": "node scripts/paypal-auth-check.mjs",
+    "paypal:bootstrap": "node scripts/paypal-bootstrap-plans.mjs",
     "worker:browser-automation": "node scripts/run-browser-automation-worker.mjs",
     "capture:screens": "node scripts/capture-saas-screenshots.mjs",
     "seo:copy": "node scripts/generate-seo-copy.mjs"
@@ -20,8 +22,7 @@
     "framer-motion": "^12.38.0",
     "next": "16.2.6",
     "react": "19.2.4",
-    "react-dom": "19.2.4",
-    "stripe": "^22.2.0"
+    "react-dom": "19.2.4"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

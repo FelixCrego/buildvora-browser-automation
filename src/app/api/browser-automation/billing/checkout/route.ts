@@ -21,6 +21,7 @@ export async function POST(request: Request) {
     const checkout = await createCheckoutRedirect({
       planId: payload.planId,
       session,
+      origin: new URL(request.url).origin,
     });
 
     return NextResponse.json({ ok: true, ...checkout });
@@ -31,4 +32,3 @@ export async function POST(request: Request) {
     );
   }
 }
-

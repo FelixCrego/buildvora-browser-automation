@@ -9,7 +9,8 @@ export type BrowserAutomationSession = {
   accountSlug: string;
   billingStatus: BillingStatus;
   billingPlan: string | null;
-  stripeCustomerId: string | null;
+  billingProvider: "paypal" | "demo";
+  billingReferenceId: string | null;
   signedInAt: string;
 };
 
@@ -19,7 +20,8 @@ export const SESSION_COOKIE_NAMES = {
   accountSlug: "buildvora_ba_account_slug",
   billingStatus: "buildvora_ba_billing_status",
   billingPlan: "buildvora_ba_billing_plan",
-  stripeCustomerId: "buildvora_ba_stripe_customer_id",
+  billingProvider: "buildvora_ba_billing_provider",
+  billingReferenceId: "buildvora_ba_billing_reference_id",
   signedInAt: "buildvora_ba_signed_in_at",
 } as const;
 
@@ -43,7 +45,8 @@ export function buildWorkspaceSession(input: {
   workspaceCode: string;
   billingStatus?: BillingStatus;
   billingPlan?: string | null;
-  stripeCustomerId?: string | null;
+  billingProvider?: "paypal" | "demo";
+  billingReferenceId?: string | null;
 }) {
   return {
     email: input.email.trim().toLowerCase(),
@@ -51,7 +54,8 @@ export function buildWorkspaceSession(input: {
     accountSlug: resolveAccountSlug(input.workspaceCode),
     billingStatus: input.billingStatus ?? "inactive",
     billingPlan: input.billingPlan ?? null,
-    stripeCustomerId: input.stripeCustomerId ?? null,
+    billingProvider: input.billingProvider ?? "demo",
+    billingReferenceId: input.billingReferenceId ?? null,
     signedInAt: new Date().toISOString(),
   } satisfies BrowserAutomationSession;
 }
@@ -78,7 +82,10 @@ export async function getWorkspaceSession() {
     signedInAt,
     billingStatus: (cookieStore.get(SESSION_COOKIE_NAMES.billingStatus)?.value as BillingStatus | undefined) ?? "inactive",
     billingPlan: cookieStore.get(SESSION_COOKIE_NAMES.billingPlan)?.value ?? null,
-    stripeCustomerId: cookieStore.get(SESSION_COOKIE_NAMES.stripeCustomerId)?.value ?? null,
+    billingProvider: (cookieStore.get(SESSION_COOKIE_NAMES.billingProvider)?.value as "paypal" | "demo" | undefined) ?? "demo",
+    billingReferenceId:
+      cookieStore.get(SESSION_COOKIE_NAMES.billingReferenceId)?.value ??
+      cookieStore.get("buildvora_ba_stripe_customer_id")?.value ??
+      null,
   } satisfies BrowserAutomationSession;
 }
-
