@@ -1242,18 +1242,19 @@ export function activateAccountBilling(input: {
 }) {
   const state = readState();
   const account = state.accounts.find((item) => item.slug === input.accountSlug);
+  const externalRef = input.externalRef ?? null;
 
   if (!account) {
     throw new Error("Account not found.");
   }
 
   if (
-    input.externalRef &&
+    externalRef &&
     state.auditEvents.some(
       (event) =>
         event.accountSlug === input.accountSlug &&
         event.event === "billing.activated" &&
-        event.detail.includes(input.externalRef),
+        event.detail.includes(externalRef),
     )
   ) {
     return account;
@@ -1273,7 +1274,7 @@ export function activateAccountBilling(input: {
     event: "billing.activated",
     target: input.accountSlug,
     severity: "info",
-    detail: `${input.note ?? `${input.billingPlan} plan activated.`}${input.externalRef ? ` [ref:${input.externalRef}]` : ""}`,
+    detail: `${input.note ?? `${input.billingPlan} plan activated.`}${externalRef ? ` [ref:${externalRef}]` : ""}`,
   });
 
   writeState(state);
