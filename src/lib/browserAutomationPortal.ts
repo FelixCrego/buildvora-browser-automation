@@ -1,7 +1,8 @@
+import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { randomUUID } from "node:crypto";
+import { DatabaseSync } from "node:sqlite";
 import {
   BrowserAutomationHarness,
   createPlaywrightAdapter,
@@ -166,10 +167,10 @@ function resolveStateFilePath() {
   }
 
   if (process.env.VERCEL) {
-  return path.join(os.tmpdir(), "buildvora-browser-automation-state.json");
+    return path.join(os.tmpdir(), "buildvora-browser-automation.db");
   }
 
-  return path.join(/*turbopackIgnore: true*/ process.cwd(), "data", "browser-automation-state.json");
+  return path.join(/*turbopackIgnore: true*/ process.cwd(), "data", "browser-automation.db");
 }
 
 function buildSeedState(): BrowserAutomationState {
@@ -188,30 +189,64 @@ function buildSeedState(): BrowserAutomationState {
   };
 }
 
-function ensureStateFile() {
-  const stateFile = resolveStateFilePath();
-  const directory = path.dirname(stateFile);
+function withDatabase<T>(
+  callback: (database: DatabaseSync) => T,
+  options: { initialize?: boolean } = {},
+) {
+  const databasePath = resolveStateFilePath();
+  const directory = path.dirname(databasePath);
 
   if (!fs.existsSync(directory)) {
     fs.mkdirSync(directory, { recursive: true });
   }
 
-  if (!fs.existsSync(stateFile)) {
-    const state = buildSeedState();
-    fs.writeFileSync(stateFile, JSON.stringify(state, null, 2), "utf8");
+  const database = new DatabaseSync(databasePath);
+  if (options.initialize) {
+    database.exec(`
+      CREATE TABLE IF NOT EXISTS state_store (
+        key TEXT PRIMARY KEY,
+        json TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+    `);
   }
 
-  return stateFile;
+  try {
+    return callback(database);
+  } finally {
+    database.close();
+  }
 }
 
 function readState(): BrowserAutomationState {
-  const stateFile = ensureStateFile();
-  return JSON.parse(fs.readFileSync(stateFile, "utf8")) as BrowserAutomationState;
+  const databasePath = resolveStateFilePath();
+  if (!fs.existsSync(databasePath)) {
+    return buildSeedState();
+  }
+
+  return withDatabase((database) => {
+    const row = database
+      .prepare("SELECT json FROM state_store WHERE key = ?")
+      .get("browser-automation-state") as { json: string } | undefined;
+
+    if (!row) {
+      return buildSeedState();
+    }
+
+    return JSON.parse(row.json) as BrowserAutomationState;
+  });
 }
 
 function writeState(state: BrowserAutomationState) {
-  const stateFile = ensureStateFile();
-  fs.writeFileSync(stateFile, JSON.stringify(state, null, 2), "utf8");
+  withDatabase((database) => {
+    database
+      .prepare(`
+        INSERT INTO state_store (key, json, updated_at)
+        VALUES (?, ?, ?)
+        ON CONFLICT(key) DO UPDATE SET json = excluded.json, updated_at = excluded.updated_at
+      `)
+      .run("browser-automation-state", JSON.stringify(state), nowIso());
+  }, { initialize: true });
 }
 
 function getBalanceFromLedger(state: BrowserAutomationState, accountSlug: string) {
@@ -882,7 +917,6 @@ function buildControlPlaneSnapshot(state: BrowserAutomationState) {
 export function getBrowserAutomationAccounts() {
   const state = readState();
   syncAccountDerivedFields(state);
-  writeState(state);
   return state.accounts;
 }
 
@@ -970,7 +1004,6 @@ export function getAdminControlPlaneSnapshot() {
   const state = readState();
   syncAccountDerivedFields(state);
   normalizeWorkerMetrics(state);
-  writeState(state);
   return buildControlPlaneSnapshot(state);
 }
 

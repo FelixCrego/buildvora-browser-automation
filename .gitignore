@@ -21,6 +21,7 @@
 # production
 /build
 /data/browser-automation-state.json
+/data/browser-automation.db
 /artifacts/browser-automation
 
 # misc
