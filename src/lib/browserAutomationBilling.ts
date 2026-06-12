@@ -73,16 +73,21 @@ export const BILLING_PLANS: BillingPlan[] = [
   },
 ];
 
+function readEnv(name: string) {
+  const value = process.env[name];
+  return typeof value === "string" ? value.trim() : "";
+}
+
 export function getBillingPlan(planId: string) {
   return BILLING_PLANS.find((plan) => plan.id === planId) ?? null;
 }
 
 export function isPayPalConfigured() {
-  return Boolean(process.env.PAYPAL_CLIENT_ID && process.env.PAYPAL_CLIENT_SECRET);
+  return Boolean(readEnv("PAYPAL_CLIENT_ID") && readEnv("PAYPAL_CLIENT_SECRET"));
 }
 
 export function getPayPalEnvironment() {
-  return process.env.PAYPAL_ENVIRONMENT === "live" ? "live" : "sandbox";
+  return readEnv("PAYPAL_ENVIRONMENT") === "live" ? "live" : "sandbox";
 }
 
 export function getPayPalBaseUrl() {
@@ -103,23 +108,26 @@ export function getAppOrigin(requestUrl?: string) {
     }
   }
 
-  if (process.env.NEXT_PUBLIC_APP_URL) {
-    return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
+  const configuredAppUrl = readEnv("NEXT_PUBLIC_APP_URL");
+  if (configuredAppUrl) {
+    return configuredAppUrl.replace(/\/$/, "");
   }
 
-  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
-    return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
+  const productionUrl = readEnv("VERCEL_PROJECT_PRODUCTION_URL");
+  if (productionUrl) {
+    return `https://${productionUrl}`;
   }
 
-  if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}`;
+  const vercelUrl = readEnv("VERCEL_URL");
+  if (vercelUrl) {
+    return `https://${vercelUrl}`;
   }
 
   return "http://localhost:3000";
 }
 
 function getPayPalPlanId(plan: BillingPlan) {
-  return plan.planIdEnv ? process.env[plan.planIdEnv] : undefined;
+  return plan.planIdEnv ? readEnv(plan.planIdEnv) : undefined;
 }
 
 async function getPayPalAccessToken() {
@@ -133,7 +141,7 @@ async function getPayPalAccessToken() {
       Accept: "application/json",
       "Content-Type": "application/x-www-form-urlencoded",
       Authorization: `Basic ${Buffer.from(
-        `${process.env.PAYPAL_CLIENT_ID}:${process.env.PAYPAL_CLIENT_SECRET}`,
+        `${readEnv("PAYPAL_CLIENT_ID")}:${readEnv("PAYPAL_CLIENT_SECRET")}`,
       ).toString("base64")}`,
     },
     body: "grant_type=client_credentials",
@@ -187,7 +195,8 @@ export async function verifyPayPalWebhook(input: {
   headers: Headers;
   event: unknown;
 }) {
-  if (!process.env.PAYPAL_WEBHOOK_ID) {
+  const webhookId = readEnv("PAYPAL_WEBHOOK_ID");
+  if (!webhookId) {
     return false;
   }
 
@@ -200,7 +209,7 @@ export async function verifyPayPalWebhook(input: {
       transmission_id: input.headers.get("paypal-transmission-id"),
       transmission_sig: input.headers.get("paypal-transmission-sig"),
       transmission_time: input.headers.get("paypal-transmission-time"),
-      webhook_id: process.env.PAYPAL_WEBHOOK_ID,
+      webhook_id: webhookId,
       webhook_event: input.event,
     },
   });
