@@ -1,26 +1,164 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type Plan = {
   id: string;
   name: string;
+  mode: "subscription" | "payment";
   monthlyLabel: string;
   creditsLabel: string;
   description: string;
   accent: string;
 };
 
+type PayPalButtonsComponent = {
+  render: (selector: string | HTMLElement) => Promise<void>;
+  close?: () => void;
+};
+
+type PayPalNamespace = {
+  Buttons: (config: Record<string, unknown>) => PayPalButtonsComponent;
+};
+
+declare global {
+  interface Window {
+    paypal?: PayPalNamespace;
+  }
+}
+
+function PayPalPlanButton({
+  plan,
+  couponCode,
+  clientId,
+  onError,
+}: {
+  plan: Plan;
+  couponCode: string;
+  clientId: string;
+  onError: (message: string) => void;
+}) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!clientId) {
+      return undefined;
+    }
+
+    let mounted = true;
+    const scriptId = "buildvora-paypal-sdk";
+
+    function renderButtons() {
+      if (!mounted || !containerRef.current || !window.paypal) {
+        return;
+      }
+
+      containerRef.current.innerHTML = "";
+      const isSubscription = plan.mode === "subscription";
+      const buttons = window.paypal.Buttons({
+        style: {
+          layout: "vertical",
+          shape: "pill",
+          label: "paypal",
+          height: 46,
+        },
+        createSubscription: isSubscription
+          ? async () => {
+              const response = await fetch("/api/browser-automation/billing/create-subscription", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ planId: plan.id, couponCode }),
+              });
+              const payload = (await response.json()) as { ok?: boolean; subscriptionId?: string; message?: string };
+              if (!response.ok || !payload.ok || !payload.subscriptionId) {
+                throw new Error(payload.message ?? "Unable to create PayPal subscription.");
+              }
+              return payload.subscriptionId;
+            }
+          : undefined,
+        createOrder: !isSubscription
+          ? async () => {
+              const response = await fetch("/api/browser-automation/billing/create-order", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ planId: plan.id, couponCode }),
+              });
+              const payload = (await response.json()) as { ok?: boolean; orderId?: string; message?: string };
+              if (!response.ok || !payload.ok || !payload.orderId) {
+                throw new Error(payload.message ?? "Unable to create PayPal order.");
+              }
+              return payload.orderId;
+            }
+          : undefined,
+        onApprove: async (data: Record<string, unknown>) => {
+          const response = await fetch("/api/browser-automation/billing/activate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              planId: plan.id,
+              token: typeof data.orderID === "string" ? data.orderID : typeof data.orderId === "string" ? data.orderId : typeof data.subscriptionID === "string" ? data.subscriptionID : null,
+              subscriptionId: typeof data.subscriptionID === "string" ? data.subscriptionID : null,
+            }),
+          });
+
+          const payload = (await response.json()) as { ok?: boolean; nextPath?: string; message?: string };
+          if (!response.ok || !payload.ok) {
+            throw new Error(payload.message ?? "Unable to finalize billing activation.");
+          }
+
+          window.location.href = payload.nextPath ?? "/workspace/browser-automation?welcome=1";
+        },
+        onError: (error: unknown) => {
+          onError(error instanceof Error ? error.message : "Unexpected PayPal checkout error.");
+        },
+      });
+
+      void buttons.render(containerRef.current);
+    }
+
+    const existingScript = document.getElementById(scriptId) as HTMLScriptElement | null;
+    if (existingScript) {
+      if (window.paypal) {
+        renderButtons();
+      } else {
+        existingScript.addEventListener("load", renderButtons, { once: true });
+      }
+
+      return () => {
+        mounted = false;
+      };
+    }
+
+    const script = document.createElement("script");
+    script.id = scriptId;
+    script.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(clientId)}&vault=true&intent=subscription&components=buttons`;
+    script.async = true;
+    script.onload = renderButtons;
+    script.onerror = () => {
+      onError("Unable to load the PayPal checkout SDK.");
+    };
+    document.body.appendChild(script);
+
+    return () => {
+      mounted = false;
+    };
+  }, [clientId, couponCode, onError, plan.id, plan.mode]);
+
+  return <div ref={containerRef} className="mt-6 min-h-[52px]" />;
+}
+
 export default function BrowserAutomationBillingControls({
   plans,
   billingStatus,
   activePlan,
   providerLabel,
+  paypalClientId,
 }: {
   plans: Plan[];
   billingStatus: string;
   activePlan: string | null;
   providerLabel: string;
+  paypalClientId: string;
 }) {
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -47,6 +185,12 @@ export default function BrowserAutomationBillingControls({
     }
   }
 
+  const providerNotice = useMemo(() => {
+    return paypalClientId
+      ? "PayPal popup checkout enabled"
+      : providerLabel;
+  }, [paypalClientId, providerLabel]);
+
   return (
     <div className="grid gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-[1.5rem] border border-slate-200 bg-[#f8fafc] px-5 py-4">
@@ -70,7 +214,7 @@ export default function BrowserAutomationBillingControls({
             </button>
           ) : null}
           <span className="rounded-full border border-slate-200 bg-white px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-            {providerLabel}
+            {providerNotice}
           </span>
         </div>
       </div>
@@ -109,16 +253,21 @@ export default function BrowserAutomationBillingControls({
             <p className="mt-4 text-3xl font-semibold tracking-[-0.03em] text-slate-950">{plan.monthlyLabel}</p>
             <p className="mt-2 text-sm font-medium text-[#0071e3]">{plan.creditsLabel}</p>
             <p className="mt-4 text-sm leading-relaxed text-slate-600">{plan.description}</p>
-            <a
-              href={`/api/browser-automation/billing/checkout/redirect?planId=${encodeURIComponent(plan.id)}&couponCode=${encodeURIComponent(couponCode)}`}
-              onClick={() => {
-                setLoadingPlan(plan.id);
-                setError(null);
-              }}
-              className="mt-6 inline-flex rounded-full bg-[#0071e3] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#0077ed]"
-            >
-              {loadingPlan === plan.id ? "Redirecting..." : plan.id === "topup" ? "Buy top-up" : "Start plan"}
-            </a>
+            {paypalClientId && plan.mode === "subscription" ? (
+              <PayPalPlanButton
+                plan={plan}
+                couponCode={couponCode}
+                clientId={paypalClientId}
+                onError={setError}
+              />
+            ) : (
+              <a
+                href={`/api/browser-automation/billing/checkout/redirect?planId=${encodeURIComponent(plan.id)}&couponCode=${encodeURIComponent(couponCode)}`}
+                className="mt-6 inline-flex rounded-full bg-[#0071e3] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#0077ed]"
+              >
+                {plan.id === "topup" ? "Buy top-up" : "Continue to PayPal"}
+              </a>
+            )}
           </article>
         ))}
       </div>

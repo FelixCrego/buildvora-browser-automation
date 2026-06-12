@@ -1,6 +1,6 @@
 import Link from "next/link";
 import BrowserAutomationBillingControls from "@/components/browser-automation-billing-controls";
-import { BILLING_PLANS, getBillingProviderLabel } from "@/lib/browserAutomationBilling";
+import { BILLING_PLANS, getBillingProviderLabel, getPublicPayPalClientId } from "@/lib/browserAutomationBilling";
 import { getWorkspaceSession } from "@/lib/browserAutomationAuth";
 import { getAccountBySlug, getPrimaryWorkspaceAccount } from "@/lib/browserAutomationPortal";
 
@@ -26,6 +26,7 @@ export default async function BrowserAutomationBillingPage() {
                 `Workspace account: ${account.name}`,
                 `Current plan target: ${account.planName}`,
                 `Available credits: ${account.availableCredits.toLocaleString()}`,
+                "Testing coupon: TEST100OFF",
                 "Protected runs and approvals stay blocked until billing is active.",
               ].map((item) => (
                 <div key={item} className="rounded-[1.2rem] border border-slate-200 bg-[#f5f5f7] px-4 py-3 text-sm text-slate-600">
@@ -56,6 +57,7 @@ export default async function BrowserAutomationBillingPage() {
               billingStatus={session?.billingStatus ?? "inactive"}
               activePlan={session?.billingPlan ?? null}
               providerLabel={getBillingProviderLabel()}
+              paypalClientId={getPublicPayPalClientId()}
             />
           </section>
         </div>

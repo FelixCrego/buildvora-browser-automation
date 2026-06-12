@@ -14,6 +14,13 @@ export type BillingPlan = {
   accent: string;
 };
 
+export type BillingCoupon = {
+  code: "TEST100OFF";
+  amountOffUsd: number;
+  operatorPlanEnv?: string;
+  scalePlanEnv?: string;
+};
+
 type PayPalSubscriptionResponse = {
   id?: string;
   status?: string;
@@ -73,6 +80,15 @@ export const BILLING_PLANS: BillingPlan[] = [
   },
 ];
 
+export const BILLING_COUPONS: BillingCoupon[] = [
+  {
+    code: "TEST100OFF",
+    amountOffUsd: 100,
+    operatorPlanEnv: "PAYPAL_PLAN_OPERATOR_TEST100OFF",
+    scalePlanEnv: "PAYPAL_PLAN_SCALE_TEST100OFF",
+  },
+];
+
 function readEnv(name: string) {
   const value = process.env[name];
   return typeof value === "string"
@@ -82,6 +98,15 @@ function readEnv(name: string) {
 
 export function getBillingPlan(planId: string) {
   return BILLING_PLANS.find((plan) => plan.id === planId) ?? null;
+}
+
+export function getBillingCoupon(couponCode?: string | null) {
+  if (!couponCode) {
+    return null;
+  }
+
+  const normalized = couponCode.trim().toUpperCase();
+  return BILLING_COUPONS.find((coupon) => coupon.code === normalized) ?? null;
 }
 
 export function isPayPalConfigured() {
@@ -98,6 +123,10 @@ export function getPayPalBaseUrl() {
 
 export function getBillingProviderLabel() {
   return isPayPalConfigured() ? "PayPal live path ready" : "Review mode fallback active";
+}
+
+export function getPublicPayPalClientId() {
+  return readEnv("NEXT_PUBLIC_PAYPAL_CLIENT_ID") || readEnv("PAYPAL_CLIENT_ID");
 }
 
 export function getAppOrigin(requestUrl?: string) {
@@ -130,6 +159,32 @@ export function getAppOrigin(requestUrl?: string) {
 
 function getPayPalPlanId(plan: BillingPlan) {
   return plan.planIdEnv ? readEnv(plan.planIdEnv) : undefined;
+}
+
+function getDiscountedPayPalPlanId(plan: BillingPlan, coupon: BillingCoupon | null) {
+  if (!coupon) {
+    return getPayPalPlanId(plan);
+  }
+
+  if (plan.id === "operator" && coupon.operatorPlanEnv) {
+    return readEnv(coupon.operatorPlanEnv) || getPayPalPlanId(plan);
+  }
+
+  if (plan.id === "scale" && coupon.scalePlanEnv) {
+    return readEnv(coupon.scalePlanEnv) || getPayPalPlanId(plan);
+  }
+
+  return getPayPalPlanId(plan);
+}
+
+function getDiscountedAmount(plan: BillingPlan, coupon: BillingCoupon | null) {
+  if (!coupon) {
+    return plan.chargeAmountUsd;
+  }
+
+  const base = Number(plan.chargeAmountUsd);
+  const discounted = Math.max(base - coupon.amountOffUsd, 0);
+  return discounted.toFixed(2);
 }
 
 async function getPayPalAccessToken() {
@@ -235,10 +290,105 @@ function getApprovalLink(links?: Array<{ href?: string; rel?: string }>) {
   );
 }
 
+export async function createPayPalSubscription(input: {
+  planId: string;
+  session: BrowserAutomationSession;
+  origin?: string;
+  couponCode?: string | null;
+}) {
+  const plan = getBillingPlan(input.planId);
+  if (!plan || plan.mode !== "subscription") {
+    throw new Error("Unknown subscription plan.");
+  }
+
+  const coupon = getBillingCoupon(input.couponCode);
+  const subscriptionPlanId = getDiscountedPayPalPlanId(plan, coupon);
+  if (!isPayPalConfigured() || !subscriptionPlanId) {
+    throw new Error("PayPal subscription checkout is not configured.");
+  }
+
+  const appOrigin = input.origin ?? getAppOrigin();
+  const subscription = await paypalRequest<PayPalSubscriptionResponse>({
+    path: "/v1/billing/subscriptions",
+    method: "POST",
+    preferRepresentation: true,
+    body: {
+      plan_id: subscriptionPlanId,
+      custom_id: input.session.accountSlug,
+      subscriber: {
+        email_address: input.session.email,
+      },
+      application_context: {
+        brand_name: "BuildVora Browser Automation",
+        user_action: "SUBSCRIBE_NOW",
+        return_url: `${appOrigin}/portal/billing/success?plan=${plan.id}${coupon ? `&coupon=${coupon.code}` : ""}`,
+        cancel_url: `${appOrigin}/portal/billing/cancel?plan=${plan.id}${coupon ? `&coupon=${coupon.code}` : ""}`,
+      },
+    },
+  });
+
+  if (!subscription.id) {
+    throw new Error("PayPal did not return a subscription id.");
+  }
+
+  return subscription.id;
+}
+
+export async function createPayPalOrder(input: {
+  planId: string;
+  session: BrowserAutomationSession;
+  origin?: string;
+  couponCode?: string | null;
+}) {
+  const plan = getBillingPlan(input.planId);
+  if (!plan || plan.mode !== "payment") {
+    throw new Error("Unknown one-time payment plan.");
+  }
+
+  const coupon = getBillingCoupon(input.couponCode);
+  const appOrigin = input.origin ?? getAppOrigin();
+  const order = await paypalRequest<PayPalOrderResponse>({
+    path: "/v2/checkout/orders",
+    method: "POST",
+    preferRepresentation: true,
+    body: {
+      intent: "CAPTURE",
+      purchase_units: [
+        {
+          reference_id: input.session.accountSlug,
+          custom_id: `${input.session.accountSlug}:topup`,
+          description: "BuildVora Browser Automation Credit Top-Up",
+          amount: {
+            currency_code: "USD",
+            value: getDiscountedAmount(plan, coupon),
+          },
+        },
+      ],
+      payment_source: {
+        paypal: {
+          experience_context: {
+            brand_name: "BuildVora Browser Automation",
+            user_action: "PAY_NOW",
+            return_url: `${appOrigin}/portal/billing/success?plan=${plan.id}${coupon ? `&coupon=${coupon.code}` : ""}`,
+            cancel_url: `${appOrigin}/portal/billing/cancel?plan=${plan.id}${coupon ? `&coupon=${coupon.code}` : ""}`,
+          },
+        },
+      },
+    },
+  });
+
+  if (!order.id) {
+    throw new Error("PayPal did not return an order id.");
+  }
+
+  return order.id;
+}
+
 export async function createCheckoutRedirect(input: {
   planId: string;
   session: BrowserAutomationSession;
   origin?: string;
+  couponCode?: string | null;
 }) {
   const plan = getBillingPlan(input.planId);
   if (!plan) {
@@ -246,21 +396,23 @@ export async function createCheckoutRedirect(input: {
   }
 
   const appOrigin = input.origin ?? getAppOrigin();
-  if (!isPayPalConfigured() || (plan.mode === "subscription" && !getPayPalPlanId(plan))) {
+  const coupon = getBillingCoupon(input.couponCode);
+  const subscriptionPlanId = getDiscountedPayPalPlanId(plan, coupon);
+
+  if (!isPayPalConfigured() || (plan.mode === "subscription" && !subscriptionPlanId)) {
     return {
       mode: "demo" as const,
-      url: `${appOrigin}/portal/billing/success?plan=${plan.id}&demo=1`,
+      url: `${appOrigin}/portal/billing/success?plan=${plan.id}&demo=1${coupon ? `&coupon=${coupon.code}` : ""}`,
     };
   }
 
   if (plan.mode === "subscription") {
-    const planId = getPayPalPlanId(plan);
     const subscription = await paypalRequest<PayPalSubscriptionResponse>({
       path: "/v1/billing/subscriptions",
       method: "POST",
       preferRepresentation: true,
       body: {
-        plan_id: planId,
+        plan_id: subscriptionPlanId,
         custom_id: input.session.accountSlug,
         subscriber: {
           email_address: input.session.email,
@@ -268,8 +420,8 @@ export async function createCheckoutRedirect(input: {
         application_context: {
           brand_name: "BuildVora Browser Automation",
           user_action: "SUBSCRIBE_NOW",
-          return_url: `${appOrigin}/portal/billing/success?plan=${plan.id}`,
-          cancel_url: `${appOrigin}/portal/billing/cancel?plan=${plan.id}`,
+          return_url: `${appOrigin}/portal/billing/success?plan=${plan.id}${coupon ? `&coupon=${coupon.code}` : ""}`,
+          cancel_url: `${appOrigin}/portal/billing/cancel?plan=${plan.id}${coupon ? `&coupon=${coupon.code}` : ""}`,
         },
       },
     });
@@ -298,7 +450,7 @@ export async function createCheckoutRedirect(input: {
           description: "BuildVora Browser Automation Credit Top-Up",
           amount: {
             currency_code: "USD",
-            value: plan.chargeAmountUsd,
+            value: getDiscountedAmount(plan, coupon),
           },
         },
       ],
@@ -307,8 +459,8 @@ export async function createCheckoutRedirect(input: {
           experience_context: {
             brand_name: "BuildVora Browser Automation",
             user_action: "PAY_NOW",
-            return_url: `${appOrigin}/portal/billing/success?plan=${plan.id}`,
-            cancel_url: `${appOrigin}/portal/billing/cancel?plan=${plan.id}`,
+            return_url: `${appOrigin}/portal/billing/success?plan=${plan.id}${coupon ? `&coupon=${coupon.code}` : ""}`,
+            cancel_url: `${appOrigin}/portal/billing/cancel?plan=${plan.id}${coupon ? `&coupon=${coupon.code}` : ""}`,
           },
         },
       },
