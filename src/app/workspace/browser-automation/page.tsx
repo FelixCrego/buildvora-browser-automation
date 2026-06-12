@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Panel, StatCard, StatusPill } from "@/components/browser-automation-console";
 import {
   getAccountApprovals,
+  getBillingAuditEvents,
   getAccountConnections,
   getAccountLedger,
   getAccountRuns,
@@ -17,16 +18,29 @@ function toneForStatus(status: string) {
   return "slate" as const;
 }
 
-export default function BrowserAutomationWorkspacePage() {
+export default async function BrowserAutomationWorkspacePage({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = searchParams ? await searchParams : undefined;
+  const showWelcome = params?.welcome === "1";
   const account = getPrimaryWorkspaceAccount();
   const workflows = getAccountWorkflows(account.slug);
   const runs = getAccountRuns(account.slug);
   const approvals = getAccountApprovals(account.slug);
   const connections = getAccountConnections(account.slug);
   const ledger = getAccountLedger(account.slug);
+  const billingEvents = getBillingAuditEvents(account.slug);
 
   return (
     <div className="grid gap-6">
+      {showWelcome ? (
+        <div className="rounded-[1.7rem] border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm text-emerald-800">
+          Payment confirmed. The workspace is unlocked and ready for launches, approvals, and credit-backed execution.
+        </div>
+      ) : null}
+
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Available Credits" value={account.availableCredits.toLocaleString()} detail={`${account.monthlyCredits.toLocaleString()} monthly credits on the ${account.planName} plan.`} />
         <StatCard label="Active Workflows" value={String(workflows.length)} detail="Provisioned browser automations now available to launch from this workspace." />
@@ -130,6 +144,20 @@ export default function BrowserAutomationWorkspacePage() {
                   <div key={entry.id} className="flex items-center justify-between gap-3 rounded-[1rem] border border-slate-200 bg-[#f5f5f7] px-4 py-3 text-sm text-slate-600">
                     <span>{entry.note}</span>
                     <span>{entry.amount > 0 ? `+${entry.amount}` : entry.amount}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="rounded-[1.4rem] border border-slate-200 bg-white p-5">
+              <p className="text-sm font-semibold text-slate-950">Billing activity</p>
+              <div className="mt-3 grid gap-3">
+                {billingEvents.slice(0, 3).map((event) => (
+                  <div key={event.id} className="rounded-[1rem] border border-slate-200 bg-[#f5f5f7] px-4 py-3 text-sm text-slate-600">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="font-semibold text-slate-950">{event.event}</span>
+                      <StatusPill tone={event.event === "billing.activated" ? "green" : "blue"}>{event.actor}</StatusPill>
+                    </div>
+                    <p className="mt-2 text-xs leading-relaxed text-slate-500">{event.detail}</p>
                   </div>
                 ))}
               </div>

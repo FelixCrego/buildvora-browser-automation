@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { grantCreditsToAccount } from "@/lib/browserAutomationPortal";
+import { activateAccountBilling, grantCreditsToAccount } from "@/lib/browserAutomationPortal";
 import {
   resolveAccountSlugFromBillingReference,
   verifyPayPalWebhook,
@@ -42,6 +42,20 @@ export async function POST(request: Request) {
     const eventType = event.event_type ?? "";
     const resource = event.resource ?? {};
 
+    if (eventType === "BILLING.SUBSCRIPTION.ACTIVATED") {
+      const accountSlug = resolveAccountSlugFromBillingReference(resource.custom_id) ?? null;
+
+      if (accountSlug && resource.id) {
+        activateAccountBilling({
+          accountSlug,
+          billingPlan: accountSlug === "northshore-clinics" ? "scale" : "operator",
+          actor: "paypal-webhook",
+          note: "Subscription activated from PayPal webhook.",
+          externalRef: resource.id,
+        });
+      }
+    }
+
     if (eventType === "PAYMENT.CAPTURE.COMPLETED") {
       const accountSlug =
         resolveAccountSlugFromBillingReference(resource.custom_id) ??
@@ -72,4 +86,3 @@ export async function POST(request: Request) {
     );
   }
 }
-

@@ -70,6 +70,12 @@ export default function BrowserAutomationBillingActivation({
         {status === "done" ? "Access unlocked" : status === "error" ? "Billing could not be verified" : "Finalizing checkout"}
       </h1>
       <p className="mt-4 text-base leading-relaxed text-slate-600">{message}</p>
+      {status !== "error" ? (
+        <div className="mt-6 grid gap-3 rounded-[1.4rem] border border-slate-200 bg-[#f8fafc] p-5 text-sm text-slate-600">
+          <p>What happens next:</p>
+          <p>The workspace session is activated, billing is recorded, and protected execution is unlocked before redirect.</p>
+        </div>
+      ) : null}
     </div>
   );
 }

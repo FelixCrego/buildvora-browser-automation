@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { grantCreditsToAccount } from "@/lib/browserAutomationPortal";
+import { activateAccountBilling, grantCreditsToAccount } from "@/lib/browserAutomationPortal";
 import { resolveCheckoutActivation } from "@/lib/browserAutomationBilling";
 import { getWorkspaceSession, SESSION_COOKIE_NAMES } from "@/lib/browserAutomationAuth";
 
@@ -27,6 +27,14 @@ export async function POST(request: Request) {
       subscriptionId: payload.subscriptionId ?? null,
     });
 
+    activateAccountBilling({
+      accountSlug: session.accountSlug,
+      billingPlan: activation.billingPlan,
+      actor: "billing",
+      note: `${activation.billingPlan} plan confirmed from PayPal.`,
+      externalRef: activation.billingReferenceId ?? undefined,
+    });
+
     if (activation.creditsToGrant > 0) {
       grantCreditsToAccount({
         accountSlug: session.accountSlug,
@@ -38,7 +46,7 @@ export async function POST(request: Request) {
 
     const response = NextResponse.json({
       ok: true,
-      nextPath: "/workspace/browser-automation",
+      nextPath: "/workspace/browser-automation?welcome=1",
       activation,
     });
 

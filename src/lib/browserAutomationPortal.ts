@@ -1233,6 +1233,61 @@ export function grantCreditsToAccount(input: {
   return state.accounts.find((item) => item.slug === input.accountSlug) ?? account;
 }
 
+export function activateAccountBilling(input: {
+  accountSlug: string;
+  billingPlan: string;
+  actor?: string;
+  note?: string;
+  externalRef?: string;
+}) {
+  const state = readState();
+  const account = state.accounts.find((item) => item.slug === input.accountSlug);
+
+  if (!account) {
+    throw new Error("Account not found.");
+  }
+
+  if (
+    input.externalRef &&
+    state.auditEvents.some(
+      (event) =>
+        event.accountSlug === input.accountSlug &&
+        event.event === "billing.activated" &&
+        event.detail.includes(input.externalRef),
+    )
+  ) {
+    return account;
+  }
+
+  if (input.billingPlan === "operator") {
+    account.planName = "Operator";
+    account.monthlyCredits = 1800;
+  } else if (input.billingPlan === "scale") {
+    account.planName = "Scale";
+    account.monthlyCredits = 4800;
+  }
+
+  addAuditEvent(state, {
+    accountSlug: input.accountSlug,
+    actor: input.actor ?? "billing",
+    event: "billing.activated",
+    target: input.accountSlug,
+    severity: "info",
+    detail: `${input.note ?? `${input.billingPlan} plan activated.`}${input.externalRef ? ` [ref:${input.externalRef}]` : ""}`,
+  });
+
+  writeState(state);
+  return account;
+}
+
+export function getBillingAuditEvents(accountSlug?: string) {
+  return readState().auditEvents.filter(
+    (event) =>
+      (!accountSlug || event.accountSlug === accountSlug) &&
+      (event.event.startsWith("billing.") || event.event.startsWith("credits.")),
+  );
+}
+
 export type {
   AuditEvent,
   AuditSeverity,
