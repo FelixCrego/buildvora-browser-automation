@@ -17,6 +17,7 @@ export type BillingPlan = {
 export type BillingCoupon = {
   code: "TEST100OFF";
   amountOffUsd: number;
+  coversFullAmount?: boolean;
   operatorPlanEnv?: string;
   scalePlanEnv?: string;
 };
@@ -84,6 +85,7 @@ export const BILLING_COUPONS: BillingCoupon[] = [
   {
     code: "TEST100OFF",
     amountOffUsd: 100,
+    coversFullAmount: true,
     operatorPlanEnv: "PAYPAL_PLAN_OPERATOR_TEST100OFF",
     scalePlanEnv: "PAYPAL_PLAN_SCALE_TEST100OFF",
   },
@@ -162,6 +164,10 @@ function getPayPalPlanId(plan: BillingPlan) {
 }
 
 function getDiscountedPayPalPlanId(plan: BillingPlan, coupon: BillingCoupon | null) {
+  if (coupon?.coversFullAmount) {
+    return undefined;
+  }
+
   if (!coupon) {
     return getPayPalPlanId(plan);
   }
@@ -177,9 +183,25 @@ function getDiscountedPayPalPlanId(plan: BillingPlan, coupon: BillingCoupon | nu
   return getPayPalPlanId(plan);
 }
 
+export function isFullyDiscountedPlan(plan: BillingPlan, coupon: BillingCoupon | null) {
+  if (!coupon) {
+    return false;
+  }
+
+  if (coupon.coversFullAmount) {
+    return true;
+  }
+
+  return Number(getDiscountedAmount(plan, coupon)) <= 0;
+}
+
 function getDiscountedAmount(plan: BillingPlan, coupon: BillingCoupon | null) {
   if (!coupon) {
     return plan.chargeAmountUsd;
+  }
+
+  if (coupon.coversFullAmount) {
+    return "0.00";
   }
 
   const base = Number(plan.chargeAmountUsd);
@@ -302,6 +324,10 @@ export async function createPayPalSubscription(input: {
   }
 
   const coupon = getBillingCoupon(input.couponCode);
+  if (isFullyDiscountedPlan(plan, coupon)) {
+    throw new Error("This coupon fully unlocks the plan internally. Use activation instead of PayPal subscription creation.");
+  }
+
   const subscriptionPlanId = getDiscountedPayPalPlanId(plan, coupon);
   if (!isPayPalConfigured() || !subscriptionPlanId) {
     throw new Error("PayPal subscription checkout is not configured.");
@@ -346,6 +372,10 @@ export async function createPayPalOrder(input: {
   }
 
   const coupon = getBillingCoupon(input.couponCode);
+  if (isFullyDiscountedPlan(plan, coupon)) {
+    throw new Error("This coupon fully unlocks the top-up internally. Use activation instead of PayPal order creation.");
+  }
+
   const appOrigin = input.origin ?? getAppOrigin();
   const order = await paypalRequest<PayPalOrderResponse>({
     path: "/v2/checkout/orders",
@@ -398,6 +428,13 @@ export async function createCheckoutRedirect(input: {
   const appOrigin = input.origin ?? getAppOrigin();
   const coupon = getBillingCoupon(input.couponCode);
   const subscriptionPlanId = getDiscountedPayPalPlanId(plan, coupon);
+
+  if (isFullyDiscountedPlan(plan, coupon)) {
+    return {
+      mode: "internal" as const,
+      url: `${appOrigin}/portal/billing/success?plan=${plan.id}&demo=1${coupon ? `&coupon=${coupon.code}` : ""}`,
+    };
+  }
 
   if (!isPayPalConfigured() || (plan.mode === "subscription" && !subscriptionPlanId)) {
     return {
@@ -492,10 +529,22 @@ export async function resolveCheckoutActivation(input: {
   planId: string;
   token?: string | null;
   subscriptionId?: string | null;
+  couponCode?: string | null;
 }) {
   const plan = getBillingPlan(input.planId);
   if (!plan) {
     throw new Error("Unknown billing plan.");
+  }
+
+  const coupon = getBillingCoupon(input.couponCode);
+  if (isFullyDiscountedPlan(plan, coupon)) {
+    return {
+      billingStatus: "active" as const,
+      billingPlan: plan.id,
+      billingReferenceId: `coupon:${coupon?.code ?? "internal"}:${plan.id}`,
+      creditsToGrant: plan.mode === "payment" ? plan.creditsAmount : 0,
+      source: "coupon" as const,
+    };
   }
 
   if (!isPayPalConfigured()) {

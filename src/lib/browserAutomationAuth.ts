@@ -9,7 +9,7 @@ export type BrowserAutomationSession = {
   accountSlug: string;
   billingStatus: BillingStatus;
   billingPlan: string | null;
-  billingProvider: "paypal" | "demo";
+  billingProvider: "paypal" | "demo" | "coupon";
   billingReferenceId: string | null;
   signedInAt: string;
 };
@@ -45,7 +45,7 @@ export function buildWorkspaceSession(input: {
   workspaceCode: string;
   billingStatus?: BillingStatus;
   billingPlan?: string | null;
-  billingProvider?: "paypal" | "demo";
+  billingProvider?: "paypal" | "demo" | "coupon";
   billingReferenceId?: string | null;
 }) {
   return {
@@ -82,7 +82,7 @@ export async function getWorkspaceSession() {
     signedInAt,
     billingStatus: (cookieStore.get(SESSION_COOKIE_NAMES.billingStatus)?.value as BillingStatus | undefined) ?? "inactive",
     billingPlan: cookieStore.get(SESSION_COOKIE_NAMES.billingPlan)?.value ?? null,
-    billingProvider: (cookieStore.get(SESSION_COOKIE_NAMES.billingProvider)?.value as "paypal" | "demo" | undefined) ?? "demo",
+    billingProvider: (cookieStore.get(SESSION_COOKIE_NAMES.billingProvider)?.value as "paypal" | "demo" | "coupon" | undefined) ?? "demo",
     billingReferenceId:
       cookieStore.get(SESSION_COOKIE_NAMES.billingReferenceId)?.value ??
       cookieStore.get("buildvora_ba_stripe_customer_id")?.value ??

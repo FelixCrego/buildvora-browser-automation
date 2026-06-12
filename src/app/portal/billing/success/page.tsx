@@ -9,12 +9,19 @@ export default async function BrowserAutomationBillingSuccessPage({
   const planId = typeof params.plan === "string" ? params.plan : "operator";
   const token = typeof params.token === "string" ? params.token : null;
   const subscriptionId = typeof params.subscription_id === "string" ? params.subscription_id : null;
+  const couponCode = typeof params.coupon === "string" ? params.coupon : null;
   const demo = params.demo === "1";
 
   return (
     <main className="min-h-screen bg-[#fbfbfd] px-6 py-16 text-slate-950 md:px-10 md:py-24">
       <div className="mx-auto max-w-3xl">
-        <BrowserAutomationBillingActivation planId={planId} token={token} subscriptionId={subscriptionId} demo={demo} />
+        <BrowserAutomationBillingActivation
+          planId={planId}
+          token={token}
+          subscriptionId={subscriptionId}
+          couponCode={couponCode}
+          demo={demo}
+        />
       </div>
     </main>
   );

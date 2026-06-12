@@ -26,7 +26,7 @@ export default async function BrowserAutomationBillingPage() {
                 `Workspace account: ${account.name}`,
                 `Current plan target: ${account.planName}`,
                 `Available credits: ${account.availableCredits.toLocaleString()}`,
-                "Testing coupon: TEST100OFF",
+                "Testing coupon: TEST100OFF unlocks the workspace without PayPal.",
                 "Protected runs and approvals stay blocked until billing is active.",
               ].map((item) => (
                 <div key={item} className="rounded-[1.2rem] border border-slate-200 bg-[#f5f5f7] px-4 py-3 text-sm text-slate-600">

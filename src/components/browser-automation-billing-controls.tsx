@@ -147,6 +147,10 @@ function PayPalPlanButton({
   return <div ref={containerRef} className="mt-6 min-h-[52px]" />;
 }
 
+function isCompCoupon(code: string) {
+  return code.trim().toUpperCase() === "TEST100OFF";
+}
+
 export default function BrowserAutomationBillingControls({
   plans,
   billingStatus,
@@ -163,6 +167,32 @@ export default function BrowserAutomationBillingControls({
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [couponCode, setCouponCode] = useState("TEST100OFF");
+
+  async function claimCoupon(planId: string) {
+    setLoadingPlan(planId);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/browser-automation/billing/activate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          planId,
+          couponCode,
+        }),
+      });
+
+      const payload = (await response.json()) as { ok?: boolean; nextPath?: string; message?: string };
+      if (!response.ok || !payload.ok) {
+        throw new Error(payload.message ?? "Unable to apply the test coupon.");
+      }
+
+      window.location.href = payload.nextPath ?? "/workspace/browser-automation?welcome=1";
+    } catch (claimError) {
+      setError(claimError instanceof Error ? claimError.message : "Unexpected coupon activation error.");
+      setLoadingPlan(null);
+    }
+  }
 
   async function openPortal() {
     setLoadingPlan("portal");
@@ -231,7 +261,7 @@ export default function BrowserAutomationBillingControls({
             />
           </label>
           <div className="rounded-full border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-amber-700">
-            $100 off testing code
+            100% off internal testing code
           </div>
         </div>
       </div>
@@ -253,7 +283,16 @@ export default function BrowserAutomationBillingControls({
             <p className="mt-4 text-3xl font-semibold tracking-[-0.03em] text-slate-950">{plan.monthlyLabel}</p>
             <p className="mt-2 text-sm font-medium text-[#0071e3]">{plan.creditsLabel}</p>
             <p className="mt-4 text-sm leading-relaxed text-slate-600">{plan.description}</p>
-            {paypalClientId && plan.mode === "subscription" ? (
+            {isCompCoupon(couponCode) ? (
+              <button
+                type="button"
+                onClick={() => void claimCoupon(plan.id)}
+                disabled={loadingPlan === plan.id}
+                className="mt-6 inline-flex rounded-full bg-[#0071e3] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#0077ed] disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {loadingPlan === plan.id ? "Unlocking..." : plan.id === "topup" ? "Apply free top-up" : "Unlock with TEST100OFF"}
+              </button>
+            ) : paypalClientId && plan.mode === "subscription" ? (
               <PayPalPlanButton
                 plan={plan}
                 couponCode={couponCode}

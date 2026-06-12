@@ -7,6 +7,7 @@ type ActivatePayload = {
   planId?: string;
   token?: string | null;
   subscriptionId?: string | null;
+  couponCode?: string | null;
 };
 
 export async function POST(request: Request) {
@@ -25,13 +26,17 @@ export async function POST(request: Request) {
       planId: payload.planId,
       token: payload.token ?? null,
       subscriptionId: payload.subscriptionId ?? null,
+      couponCode: payload.couponCode ?? null,
     });
 
     activateAccountBilling({
       accountSlug: session.accountSlug,
       billingPlan: activation.billingPlan,
       actor: "billing",
-      note: `${activation.billingPlan} plan confirmed from PayPal.`,
+      note:
+        activation.source === "coupon"
+          ? `${activation.billingPlan} plan unlocked by ${payload.couponCode ?? "internal"} test coupon.`
+          : `${activation.billingPlan} plan confirmed from ${activation.source === "paypal" ? "PayPal" : "review mode"}.`,
       externalRef: activation.billingReferenceId ?? undefined,
     });
 
@@ -41,6 +46,7 @@ export async function POST(request: Request) {
         amount: activation.creditsToGrant,
         note: `${payload.planId === "topup" ? "Credit top-up" : "Plan activation"} settled via ${activation.source}.`,
         actor: "billing",
+        externalRef: activation.billingReferenceId ?? undefined,
       });
     }
 
@@ -52,7 +58,11 @@ export async function POST(request: Request) {
 
     response.cookies.set(SESSION_COOKIE_NAMES.billingStatus, activation.billingStatus, { httpOnly: true, sameSite: "lax", path: "/" });
     response.cookies.set(SESSION_COOKIE_NAMES.billingPlan, activation.billingPlan, { httpOnly: true, sameSite: "lax", path: "/" });
-    response.cookies.set(SESSION_COOKIE_NAMES.billingProvider, activation.source === "paypal" ? "paypal" : "demo", { httpOnly: true, sameSite: "lax", path: "/" });
+    response.cookies.set(
+      SESSION_COOKIE_NAMES.billingProvider,
+      activation.source === "paypal" ? "paypal" : activation.source === "coupon" ? "coupon" : "demo",
+      { httpOnly: true, sameSite: "lax", path: "/" },
+    );
     response.cookies.set(SESSION_COOKIE_NAMES.billingReferenceId, activation.billingReferenceId ?? "", { httpOnly: true, sameSite: "lax", path: "/" });
 
     return response;
