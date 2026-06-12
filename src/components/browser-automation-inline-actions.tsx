@@ -3,6 +3,14 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
+function confirmAction(message: string) {
+  if (typeof window === "undefined") {
+    return true;
+  }
+
+  return window.confirm(message);
+}
+
 function ActionButton({
   label,
   onClick,
@@ -71,7 +79,16 @@ export function RunInlineActions({ runId }: { runId: string }) {
       <div className="flex flex-wrap gap-2">
         <ActionButton label="Pause" onClick={() => operate(`/api/browser-automation/runs/${runId}/operate`, "pause")} disabled={isPending} />
         <ActionButton label="Retry" onClick={() => operate(`/api/browser-automation/runs/${runId}/operate`, "retry")} disabled={isPending} />
-        <ActionButton label="Cancel" tone="danger" onClick={() => operate(`/api/browser-automation/runs/${runId}/operate`, "cancel")} disabled={isPending} />
+        <ActionButton
+          label="Cancel"
+          tone="danger"
+          onClick={() => {
+            if (confirmAction("Cancel this run and stop further execution?")) {
+              operate(`/api/browser-automation/runs/${runId}/operate`, "cancel");
+            }
+          }}
+          disabled={isPending}
+        />
       </div>
       {error ? <p className="mt-2 text-xs text-rose-600">{error}</p> : null}
     </div>
@@ -85,7 +102,15 @@ export function ConnectionInlineActions({ connectionId }: { connectionId: string
     <div>
       <div className="flex flex-wrap gap-2">
         <ActionButton label="Re-verify" onClick={() => operate(`/api/browser-automation/connections/${connectionId}/operate`, "reverify")} disabled={isPending} />
-        <ActionButton label="Rotate" onClick={() => operate(`/api/browser-automation/connections/${connectionId}/operate`, "rotate")} disabled={isPending} />
+        <ActionButton
+          label="Rotate"
+          onClick={() => {
+            if (confirmAction("Mark this connection for credential rotation and operator follow-up?")) {
+              operate(`/api/browser-automation/connections/${connectionId}/operate`, "rotate");
+            }
+          }}
+          disabled={isPending}
+        />
       </div>
       {error ? <p className="mt-2 text-xs text-rose-600">{error}</p> : null}
     </div>
@@ -108,7 +133,15 @@ export function WorkerInlineActions({
         {restore ? (
           <ActionButton label="Restore" onClick={() => operate(`/api/browser-automation/workers/${workerId}/operate`, "restore")} disabled={isPending} />
         ) : (
-          <ActionButton label="Drain" onClick={() => operate(`/api/browser-automation/workers/${workerId}/operate`, "drain")} disabled={isPending} />
+          <ActionButton
+            label="Drain"
+            onClick={() => {
+              if (confirmAction("Drain this worker from the queue?")) {
+                operate(`/api/browser-automation/workers/${workerId}/operate`, "drain");
+              }
+            }}
+            disabled={isPending}
+          />
         )}
       </div>
       {error ? <p className="mt-2 text-xs text-rose-600">{error}</p> : null}

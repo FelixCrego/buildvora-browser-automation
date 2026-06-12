@@ -2,10 +2,10 @@ import Link from "next/link";
 import ClientLoginForm from "@/components/client-login-form";
 import BrowserAutomationApprovalActions from "@/components/browser-automation-approval-actions";
 import {
-  ConnectionInlineActions,
-  RunInlineActions,
-  WorkerInlineActions,
-} from "@/components/browser-automation-inline-actions";
+  PortalConnectionOpsPanel,
+  PortalRunOpsTable,
+  PortalWorkerOpsTable,
+} from "@/components/browser-automation-portal-ops";
 import BrowserAutomationLaunchSimulator from "@/components/browser-automation-launch-simulator";
 import { StatusPill } from "@/components/browser-automation-console";
 import {
@@ -71,7 +71,6 @@ export default function PortalPage() {
   const snapshot = getAdminControlPlaneSnapshot();
   const workers = getWorkerNodes();
   const featuredWorkflow = workflows[0];
-  const unhealthyConnections = connections.filter((connection) => connection.status !== "healthy");
 
   return (
     <main className="min-h-screen bg-[#f3f5f9] text-slate-950">
@@ -250,33 +249,7 @@ export default function PortalPage() {
               </Link>
             </div>
 
-            <div className="mt-5 overflow-hidden rounded-[1.4rem] border border-slate-200">
-              <div className="grid grid-cols-[1.1fr_0.8fr_0.7fr_0.55fr_0.55fr_0.95fr] gap-3 bg-[#f5f5f7] px-4 py-3 text-[10px] uppercase tracking-[0.18em] text-slate-500">
-                <span>Run</span>
-                <span>Status</span>
-                <span>Requested</span>
-                <span>Credits</span>
-                <span>Lane</span>
-                <span>Action</span>
-              </div>
-              {runs.slice(0, 6).map((run) => (
-                <div key={run.id} className="grid grid-cols-[1.1fr_0.8fr_0.7fr_0.55fr_0.55fr_0.95fr] gap-3 border-t border-slate-200 bg-white px-4 py-4 text-sm text-slate-600">
-                  <Link href={`/workspace/browser-automation/runs/${run.id}`} className="min-w-0 transition hover:text-[#0071e3]">
-                    <p className="font-semibold text-slate-950">{run.id}</p>
-                    <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-slate-500">{run.summary}</p>
-                  </Link>
-                  <div className="self-center">
-                    <StatusPill tone={tone(run.status)}>{run.status.replace(/_/g, " ")}</StatusPill>
-                  </div>
-                  <div className="self-center">{run.requestedBy}</div>
-                  <div className="self-center text-slate-950">{run.actualCredits}</div>
-                  <div className="self-center uppercase tracking-[0.14em] text-slate-500">{run.queueLane}</div>
-                  <div className="self-center">
-                    <RunInlineActions runId={run.id} />
-                  </div>
-                </div>
-              ))}
-            </div>
+            <PortalRunOpsTable runs={runs} />
 
             <div className="mt-5 grid gap-4 xl:grid-cols-2">
               <div className="rounded-[1.4rem] border border-slate-200 bg-[#f8fafc] p-4">
@@ -290,25 +263,7 @@ export default function PortalPage() {
                   ))}
                 </div>
               </div>
-              <div className="rounded-[1.4rem] border border-slate-200 bg-[#f8fafc] p-4">
-                <p className="text-sm font-semibold text-slate-950">Connection blockers</p>
-                <div className="mt-4 grid gap-3">
-                  {(unhealthyConnections.length ? unhealthyConnections : connections.slice(0, 2)).map((connection) => (
-                    <div key={connection.id} className="rounded-[1rem] bg-white px-4 py-3 text-sm text-slate-600">
-                      <div className="flex items-center justify-between gap-3">
-                        <div>
-                          <p className="font-semibold text-slate-950">{connection.provider}</p>
-                          <p className="mt-1 text-xs text-slate-500">{connection.label}</p>
-                        </div>
-                        <StatusPill tone={tone(connection.status)}>{connection.status.replace(/_/g, " ")}</StatusPill>
-                      </div>
-                      <div className="mt-3">
-                        <ConnectionInlineActions connectionId={connection.id} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <PortalConnectionOpsPanel connections={connections} />
             </div>
           </section>
         </div>
@@ -332,31 +287,7 @@ export default function PortalPage() {
               <MetricCard label="Disconnected" value={String(snapshot.totals.disconnectedConnections)} note="Execution blockers" />
             </div>
 
-            <div className="mt-5 overflow-hidden rounded-[1.4rem] border border-slate-200">
-              <div className="grid grid-cols-[0.92fr_0.6fr_0.5fr_0.5fr_0.78fr] gap-3 bg-[#f5f5f7] px-4 py-3 text-[10px] uppercase tracking-[0.18em] text-slate-500">
-                <span>Worker</span>
-                <span>Status</span>
-                <span>Active</span>
-                <span>Queue</span>
-                <span>Action</span>
-              </div>
-              {workers.map((worker) => (
-                <div key={worker.id} className="grid grid-cols-[0.92fr_0.6fr_0.5fr_0.5fr_0.78fr] gap-3 border-t border-slate-200 bg-white px-4 py-4 text-sm text-slate-600">
-                  <div>
-                    <p className="font-semibold text-slate-950">{worker.label}</p>
-                    <p className="mt-1 text-xs uppercase tracking-[0.14em] text-slate-500">{worker.region} / {worker.runtime}</p>
-                  </div>
-                  <div className="self-center">
-                    <StatusPill tone={tone(worker.status)}>{worker.status}</StatusPill>
-                  </div>
-                  <div className="self-center text-slate-950">{worker.activeRuns}</div>
-                  <div className="self-center text-slate-950">{worker.queueDepth}</div>
-                  <div className="self-center">
-                    <WorkerInlineActions workerId={worker.id} status={worker.status} />
-                  </div>
-                </div>
-              ))}
-            </div>
+            <PortalWorkerOpsTable workers={workers} />
 
             <div className="mt-5 grid gap-3">
               {snapshot.auditEvents.slice(0, 4).map((event) => (
