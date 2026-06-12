@@ -315,6 +315,7 @@ export default function PortalPage() {
             <div className="mt-5 grid gap-3 md:grid-cols-2">
               {[
                 ["/workspace/browser-automation/create", "Voice builder", "Scope new workflows"],
+                ["/portal/billing", "Billing", "Paywall and credits"],
                 ["/workspace/browser-automation/connections", "Connections", "Credential review"],
                 ["/admin/browser-automation/runs", "Run controls", "Queue operations"],
                 ["/admin/browser-automation/credits", "Credits ledger", "Audit billing movement"],

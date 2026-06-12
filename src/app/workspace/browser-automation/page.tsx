@@ -72,6 +72,15 @@ export default function BrowserAutomationWorkspacePage() {
         <Panel title="Workspace operations" kicker="Current posture">
           <div className="grid gap-4">
             <Link
+              href="/portal/billing"
+              className="rounded-[1.4rem] border border-slate-200 bg-[#fff7ed] p-5 transition hover:border-[#0071e3]/25"
+            >
+              <p className="text-sm font-semibold text-slate-950">Billing and credits</p>
+              <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                Manage the active plan, buy top-up credits, and keep the workspace unlocked for protected runs.
+              </p>
+            </Link>
+            <Link
               href="/workspace/browser-automation/create"
               className="rounded-[1.4rem] border border-slate-200 bg-[#f5f9ff] p-5 transition hover:border-[#0071e3]/25"
             >

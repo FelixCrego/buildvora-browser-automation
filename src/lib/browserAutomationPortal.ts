@@ -1177,6 +1177,48 @@ export function estimateRunLaunch(input: {
   };
 }
 
+export function grantCreditsToAccount(input: {
+  accountSlug: string;
+  amount: number;
+  note: string;
+  source?: "billing" | "admin";
+  actor?: string;
+}) {
+  const state = readState();
+  const account = state.accounts.find((item) => item.slug === input.accountSlug);
+
+  if (!account) {
+    throw new Error("Account not found.");
+  }
+
+  const balance = getBalanceFromLedger(state, input.accountSlug);
+  const nextBalance = balance + input.amount;
+
+  state.creditLedger.unshift({
+    id: `led_${randomUUID().slice(0, 8)}`,
+    accountSlug: input.accountSlug,
+    type: "grant",
+    amount: input.amount,
+    balanceAfter: nextBalance,
+    createdAt: nowIso(),
+    note: input.note,
+    source: input.source ?? "billing",
+  });
+
+  addAuditEvent(state, {
+    accountSlug: input.accountSlug,
+    actor: input.actor ?? "billing",
+    event: "credits.granted",
+    target: input.accountSlug,
+    severity: "info",
+    detail: `${input.amount} credits added to ${account.name}.`,
+  });
+
+  syncAccountDerivedFields(state);
+  writeState(state);
+  return state.accounts.find((item) => item.slug === input.accountSlug) ?? account;
+}
+
 export type {
   AuditEvent,
   AuditSeverity,

@@ -1,5 +1,7 @@
 import { ConsoleShell } from "@/components/browser-automation-console";
+import { getWorkspaceSession, hasWorkspaceAccess } from "@/lib/browserAutomationAuth";
 import { getPrimaryWorkspaceAccount } from "@/lib/browserAutomationPortal";
+import { redirect } from "next/navigation";
 
 const account = getPrimaryWorkspaceAccount();
 
@@ -13,6 +15,11 @@ const navLinks = [
     href: "/workspace/browser-automation/create",
     label: "Voice Builder",
     hint: "Talk through the workflow you want and convert it into a scoped automation plan.",
+  },
+  {
+    href: "/portal/billing",
+    label: "Billing",
+    hint: "Manage the paywall, workspace plan, and credit top-ups.",
   },
   {
     href: "/workspace/browser-automation/approvals",
@@ -36,6 +43,24 @@ export default function BrowserAutomationWorkspaceLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  return <WorkspaceLayoutInner>{children}</WorkspaceLayoutInner>;
+}
+
+async function WorkspaceLayoutInner({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  const session = await getWorkspaceSession();
+
+  if (!session) {
+    redirect("/portal/client/login");
+  }
+
+  if (!hasWorkspaceAccess(session)) {
+    redirect("/portal/billing");
+  }
+
   return (
     <ConsoleShell
       eyebrow="Signed Client Workspace"

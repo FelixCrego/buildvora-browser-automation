@@ -28,17 +28,28 @@ export default function ClientLoginForm() {
     }
 
     setLoading(true);
-    window.localStorage.setItem(
-      "buildvora-browser-automation-session",
-      JSON.stringify({
-        email: normalizedEmail,
-        workspaceCode: normalizedCode,
-        signedInAt: new Date().toISOString(),
-      }),
-    );
-    window.setTimeout(() => {
-      router.push("/workspace/browser-automation");
-    }, 450);
+    try {
+      const response = await fetch("/api/browser-automation/session/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: normalizedEmail,
+          workspaceCode: normalizedCode,
+        }),
+      });
+
+      const payload = (await response.json()) as { ok?: boolean; nextPath?: string; message?: string };
+      if (!response.ok || !payload.ok) {
+        throw new Error(payload.message ?? "Unable to sign in.");
+      }
+
+      router.push(payload.nextPath ?? "/portal/billing");
+      router.refresh();
+    } catch (loginError) {
+      setError(loginError instanceof Error ? loginError.message : "Unexpected sign-in error.");
+      setLoading(false);
+      return;
+    }
   };
 
   return (
@@ -72,7 +83,7 @@ export default function ClientLoginForm() {
       <div className="mt-5 rounded-[1.25rem] bg-[#f5f5f7] p-4">
         <p className="text-sm font-semibold text-slate-950">Launch note</p>
         <p className="mt-2 text-sm leading-relaxed text-slate-600">
-          This login is configured as a controlled beta entry flow for launch review. Production auth and account enforcement are the next backend layer.
+          Sign-in now lands on billing and unlocks the workspace only after a paid plan, top-up, or review activation is confirmed.
         </p>
       </div>
 
@@ -81,7 +92,7 @@ export default function ClientLoginForm() {
         disabled={loading}
         className="mt-6 inline-flex rounded-full bg-[#0071e3] px-5 py-3 text-sm font-medium text-white transition hover:bg-[#0077ed] disabled:cursor-not-allowed disabled:opacity-70"
       >
-        {loading ? "Opening Workspace..." : "Sign In To Portal"}
+        {loading ? "Opening Billing..." : "Sign In To Portal"}
       </button>
       {error ? <p className="mt-4 text-sm text-rose-600">{error}</p> : null}
     </form>

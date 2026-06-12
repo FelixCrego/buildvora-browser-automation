@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getWorkspaceSession, hasWorkspaceAccess } from "@/lib/browserAutomationAuth";
 import { estimateRunLaunch, launchWorkflowRun } from "@/lib/browserAutomationPortal";
 
 type LaunchPayload = {
@@ -28,6 +29,14 @@ export async function POST(request: Request) {
     }
 
     if (payload.execute) {
+      const session = await getWorkspaceSession();
+      if (!session || !hasWorkspaceAccess(session)) {
+        return NextResponse.json(
+          { ok: false, message: "Billing is required before protected workflow execution can start." },
+          { status: 402 },
+        );
+      }
+
       const execution = await launchWorkflowRun({
         workflowSlug: payload.workflowSlug,
         targetCount: payload.targetCount,
