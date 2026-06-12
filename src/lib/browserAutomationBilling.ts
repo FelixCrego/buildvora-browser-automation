@@ -31,6 +31,10 @@ type PayPalOrderResponse = {
   }>;
 };
 
+type PayPalWebhookVerificationResponse = {
+  verification_status?: "SUCCESS" | "FAILURE";
+};
+
 export const BILLING_PLANS: BillingPlan[] = [
   {
     id: "operator",
@@ -177,6 +181,39 @@ async function paypalRequest<T>(input: {
   }
 
   return payload;
+}
+
+export async function verifyPayPalWebhook(input: {
+  headers: Headers;
+  event: unknown;
+}) {
+  if (!process.env.PAYPAL_WEBHOOK_ID) {
+    return false;
+  }
+
+  const verification = await paypalRequest<PayPalWebhookVerificationResponse>({
+    path: "/v1/notifications/verify-webhook-signature",
+    method: "POST",
+    body: {
+      auth_algo: input.headers.get("paypal-auth-algo"),
+      cert_url: input.headers.get("paypal-cert-url"),
+      transmission_id: input.headers.get("paypal-transmission-id"),
+      transmission_sig: input.headers.get("paypal-transmission-sig"),
+      transmission_time: input.headers.get("paypal-transmission-time"),
+      webhook_id: process.env.PAYPAL_WEBHOOK_ID,
+      webhook_event: input.event,
+    },
+  });
+
+  return verification.verification_status === "SUCCESS";
+}
+
+export function resolveAccountSlugFromBillingReference(reference?: string | null) {
+  if (!reference) {
+    return null;
+  }
+
+  return reference.split(":")[0] ?? null;
 }
 
 function getApprovalLink(links?: Array<{ href?: string; rel?: string }>) {

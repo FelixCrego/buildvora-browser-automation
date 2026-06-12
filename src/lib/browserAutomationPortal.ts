@@ -1183,12 +1183,26 @@ export function grantCreditsToAccount(input: {
   note: string;
   source?: "billing" | "admin";
   actor?: string;
+  externalRef?: string;
 }) {
   const state = readState();
   const account = state.accounts.find((item) => item.slug === input.accountSlug);
 
   if (!account) {
     throw new Error("Account not found.");
+  }
+
+  const externalRef = input.externalRef ?? null;
+
+  if (
+    externalRef &&
+    state.creditLedger.some(
+      (entry) =>
+        entry.accountSlug === input.accountSlug &&
+        entry.note.includes(externalRef),
+    )
+  ) {
+    return state.accounts.find((item) => item.slug === input.accountSlug) ?? account;
   }
 
   const balance = getBalanceFromLedger(state, input.accountSlug);
@@ -1201,7 +1215,7 @@ export function grantCreditsToAccount(input: {
     amount: input.amount,
     balanceAfter: nextBalance,
     createdAt: nowIso(),
-    note: input.note,
+    note: externalRef ? `${input.note} [ref:${externalRef}]` : input.note,
     source: input.source ?? "billing",
   });
 

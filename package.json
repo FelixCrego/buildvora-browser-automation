@@ -13,6 +13,7 @@
     "package:pack": "npm pack --workspace @buildvora/browser-automation",
     "paypal:auth": "node scripts/paypal-auth-check.mjs",
     "paypal:bootstrap": "node scripts/paypal-bootstrap-plans.mjs",
+    "paypal:webhook": "node scripts/paypal-create-webhook.mjs",
     "worker:browser-automation": "node scripts/run-browser-automation-worker.mjs",
     "capture:screens": "node scripts/capture-saas-screenshots.mjs",
     "seo:copy": "node scripts/generate-seo-copy.mjs"
