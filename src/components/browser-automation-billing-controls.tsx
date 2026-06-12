@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 
 type Plan = {
@@ -26,7 +25,6 @@ export default function BrowserAutomationBillingControls({
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [couponCode, setCouponCode] = useState("TEST100OFF");
-  const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
 
   async function openPortal() {
     setLoadingPlan("portal");
@@ -111,17 +109,16 @@ export default function BrowserAutomationBillingControls({
             <p className="mt-4 text-3xl font-semibold tracking-[-0.03em] text-slate-950">{plan.monthlyLabel}</p>
             <p className="mt-2 text-sm font-medium text-[#0071e3]">{plan.creditsLabel}</p>
             <p className="mt-4 text-sm leading-relaxed text-slate-600">{plan.description}</p>
-            <Link
+            <a
               href={`/api/browser-automation/billing/checkout/redirect?planId=${encodeURIComponent(plan.id)}&couponCode=${encodeURIComponent(couponCode)}`}
               onClick={() => {
                 setLoadingPlan(plan.id);
                 setError(null);
-                setCheckoutUrl(null);
               }}
               className="mt-6 inline-flex rounded-full bg-[#0071e3] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#0077ed]"
             >
               {loadingPlan === plan.id ? "Redirecting..." : plan.id === "topup" ? "Buy top-up" : "Start plan"}
-            </Link>
+            </a>
           </article>
         ))}
       </div>
