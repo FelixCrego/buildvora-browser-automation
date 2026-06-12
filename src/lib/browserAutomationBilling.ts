@@ -75,7 +75,9 @@ export const BILLING_PLANS: BillingPlan[] = [
 
 function readEnv(name: string) {
   const value = process.env[name];
-  return typeof value === "string" ? value.trim() : "";
+  return typeof value === "string"
+    ? value.replace(/\\r/g, "").replace(/\\n/g, "").trim()
+    : "";
 }
 
 export function getBillingPlan(planId: string) {
