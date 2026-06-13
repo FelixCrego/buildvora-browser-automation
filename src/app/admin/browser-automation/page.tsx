@@ -34,7 +34,7 @@ export default async function BrowserAutomationAdminPage() {
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
         <StatCard label="MRR" value={`$${economics.totals.mrrUsd.toLocaleString()}`} detail="Plan revenue at the current account mix." />
         <StatCard label="Trial Accounts" value={String(economics.totals.trialAccounts)} detail="Self-serve workspaces still inside the 3-day trial." />
-        <StatCard label="Trial → Paid" value={`${economics.totals.trialToPaidConversionRate}%`} detail="Current conversion mix based on active paid vs trial accounts." />
+        <StatCard label="Trial to Paid" value={`${economics.totals.trialToPaidConversionRate}%`} detail="Current conversion mix based on active paid vs trial accounts." />
         <StatCard label="Credits Burned" value={economics.totals.creditsBurned.toLocaleString()} detail="Settled run usage across all accounts." />
         <StatCard label="Avg Revenue / Run" value={`$${economics.totals.averageRevenuePerRunUsd}`} detail="Estimated revenue equivalent based on plan credit value." />
         <StatCard label="Gross Margin" value={`$${economics.totals.grossMarginUsd.toLocaleString()}`} detail="Estimated revenue minus vendor cost across completed runs." />
@@ -47,6 +47,7 @@ export default async function BrowserAutomationAdminPage() {
               { href: "/admin/browser-automation/runs", label: "Run queue controls", text: "Pause, cancel, retry, and re-lane active runs by worker or account.", tone: "blue" },
               { href: "/admin/browser-automation/workflows", label: "Workflow release controls", text: "Review draft versions, publish state, retries, approvals, and verification modes.", tone: "green" },
               { href: "/admin/browser-automation/credits", label: "Credit and billing controls", text: "Manage holds, debits, top-ups, service credits, and overage posture.", tone: "amber" },
+              { href: "/admin/browser-automation/economics", label: "Run economics", text: "Track account margin, run-class profitability, and pricing pressure before it leaks margin.", tone: "blue" },
               { href: "/admin/browser-automation/workers", label: "Worker fleet controls", text: "Inspect runtime health, queue saturation, browser pool assignment, and failover posture.", tone: "red" },
               { href: "/admin/browser-automation/diagnostics", label: "Launch diagnostics", text: "Check database, billing, runtime, and environment readiness from one page.", tone: "blue" },
             ].map((card) => (

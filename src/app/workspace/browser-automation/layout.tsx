@@ -17,6 +17,11 @@ const navLinks = [
     hint: "Talk through the workflow you want and convert it into a scoped automation plan.",
   },
   {
+    href: "/workspace/browser-automation/access",
+    label: "Access + Roles",
+    hint: "See who should approve, operate, or administer this workspace.",
+  },
+  {
     href: "/portal/billing",
     label: "Billing",
     hint: "Manage the paywall, workspace plan, and credit top-ups.",

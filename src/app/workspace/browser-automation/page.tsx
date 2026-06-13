@@ -1,4 +1,5 @@
 import Link from "next/link";
+import BrowserAutomationOnboardingWizard, { type WizardStep } from "@/components/browser-automation-onboarding-wizard";
 import { Panel, StatCard, StatusPill } from "@/components/browser-automation-console";
 import { getWorkspaceSession } from "@/lib/browserAutomationAuth";
 import {
@@ -37,6 +38,56 @@ export default async function BrowserAutomationWorkspacePage({
   const ledger = await getAccountLedger(account.slug);
   const billingEvents = await getBillingAuditEvents(account.slug);
   const attentionConnections = connections.filter((connection) => connection.status !== "healthy");
+  const onboardingSteps: WizardStep[] = [
+    {
+      id: "signin",
+      title: "Workspace access is active",
+      detail: `Signed in as ${session?.email ?? "workspace user"} with ${account.availableCredits.toLocaleString()} credits available.`,
+      href: "/workspace/browser-automation/access",
+      cta: "Review roles",
+      status: "complete" as const,
+    },
+    {
+      id: "workflow",
+      title: workflows.length > 0 ? "Workflow is ready to review" : "Build your first workflow",
+      detail: workflows.length > 0
+        ? "You already have a provisioned workflow or draft available for launch review."
+        : "Use the voice builder to describe the browser task you want automated.",
+      href: workflows.length > 0 ? `/workspace/browser-automation/workflows/${workflows[0].slug}` : "/workspace/browser-automation/create",
+      cta: workflows.length > 0 ? "Open workflow" : "Open voice builder",
+      status: workflows.length > 0 ? "complete" : "active",
+    },
+    {
+      id: "connections",
+      title: attentionConnections.length === 0 ? "Connections look healthy" : "Resolve connection blockers",
+      detail: attentionConnections.length === 0
+        ? "Required integrations are healthy enough for test execution."
+        : "One or more required systems still need verification or rotation.",
+      href: "/workspace/browser-automation/connections",
+      cta: "Review connections",
+      status: attentionConnections.length === 0 ? "complete" : "active",
+    },
+    {
+      id: "test-run",
+      title: runs.length > 0 ? "Test run completed" : "Launch a first test run",
+      detail: runs.length > 0
+        ? "The workspace has execution history and can be tuned from real evidence."
+        : "Open a workflow, review the estimate, and launch a guarded test run.",
+      href: workflows.length > 0 ? `/workspace/browser-automation/workflows/${workflows[0].slug}` : "/workspace/browser-automation",
+      cta: "Launch test run",
+      status: runs.length > 0 ? "complete" : workflows.length > 0 ? "active" : "locked",
+    },
+    {
+      id: "publish",
+      title: account.canPublish ? "Production publishing is unlocked" : "Upgrade before production publish",
+      detail: account.canPublish
+        ? "The workspace can move from test execution into production rollout."
+        : "Trial workspaces can build and test, but production publishing stays locked until upgrade.",
+      href: account.canPublish ? "/workspace/browser-automation/access" : "/portal/billing",
+      cta: account.canPublish ? "Review access" : "Upgrade plan",
+      status: account.canPublish ? "complete" : "locked",
+    },
+  ];
 
   return (
     <div className="grid gap-6">
@@ -51,39 +102,8 @@ export default async function BrowserAutomationWorkspacePage({
         </div>
       ) : null}
 
-      <Panel title="What to do next" kicker="First-run path">
-        <div className="grid gap-4 lg:grid-cols-3">
-          {[
-            {
-              title: "Build or choose a workflow",
-              detail: "Use the voice builder for a new automation, or open a provisioned workflow and review the estimated credit burn.",
-              href: "/workspace/browser-automation/create",
-              cta: "Open voice builder",
-            },
-            {
-              title: "Verify billing and credits",
-              detail: "Trial users can test immediately. Upgrade when the workflow is ready for production publishing or ongoing runs.",
-              href: "/portal/billing",
-              cta: "Review billing",
-            },
-            {
-              title: "Check blockers before launch",
-              detail: "Look for pending approvals, disconnected integrations, or workflows that still need a final review.",
-              href: "/workspace/browser-automation/connections",
-              cta: "Review blockers",
-            },
-          ].map((card) => (
-            <Link
-              key={card.title}
-              href={card.href}
-              className="rounded-[1.5rem] border border-slate-200 bg-white p-5 transition hover:border-[#0071e3]/20 hover:bg-[#f5f9ff]"
-            >
-              <p className="text-sm font-semibold text-slate-950">{card.title}</p>
-              <p className="mt-2 text-sm leading-relaxed text-slate-600">{card.detail}</p>
-              <p className="mt-4 text-xs font-semibold uppercase tracking-[0.18em] text-[#0071e3]">{card.cta}</p>
-            </Link>
-          ))}
-        </div>
+      <Panel title="First-run wizard" kicker="Guided setup">
+        <BrowserAutomationOnboardingWizard steps={onboardingSteps} />
       </Panel>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">

@@ -58,6 +58,7 @@ export async function POST(request: Request) {
     response.cookies.set(SESSION_COOKIE_NAMES.billingProvider, session.billingProvider, { httpOnly: true, sameSite: "lax", path: "/" });
     response.cookies.set(SESSION_COOKIE_NAMES.billingReferenceId, session.billingReferenceId ?? "", { httpOnly: true, sameSite: "lax", path: "/" });
     response.cookies.set(SESSION_COOKIE_NAMES.signedInAt, session.signedInAt, { httpOnly: true, sameSite: "lax", path: "/" });
+    response.cookies.set(SESSION_COOKIE_NAMES.role, session.role, { httpOnly: true, sameSite: "lax", path: "/" });
     applyWorkspaceAccountCookies(response, account);
 
     return response;

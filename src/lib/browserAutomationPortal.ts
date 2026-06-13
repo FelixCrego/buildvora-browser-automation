@@ -175,6 +175,28 @@ type AdminEconomicsSnapshot = {
   }>;
 };
 
+type AccountEconomicsRow = {
+  accountSlug: string;
+  accountName: string;
+  planName: string;
+  runs: number;
+  creditsBurned: number;
+  revenueUsd: number;
+  costUsd: number;
+  grossMarginUsd: number;
+  grossMarginPct: number;
+  averageCreditsPerRun: number;
+  retryRatePct: number;
+  approvalRatePct: number;
+};
+
+type WorkspaceAccessEntry = {
+  name: string;
+  email: string;
+  role: "Workspace owner" | "Approver" | "Operator" | "Viewer";
+  responsibility: string;
+};
+
 type LaunchPayload = {
   workflowSlug: string;
   targetCount?: number;
@@ -1646,6 +1668,73 @@ export async function getAdminEconomicsSnapshot(): Promise<AdminEconomicsSnapsho
     },
     runsByClass,
   };
+}
+
+export async function getAccountEconomicsRows(): Promise<AccountEconomicsRow[]> {
+  const state = await readState();
+  syncAccountDerivedFields(state);
+
+  return state.accounts.map((account) => {
+    const runs = state.runs.filter((run) => run.accountSlug === account.slug && run.actualCredits > 0);
+    const creditsBurned = runs.reduce((sum, run) => sum + run.actualCredits, 0);
+    const costUsd = runs.reduce((sum, run) => sum + run.vendorCostUsd, 0);
+    const revenueUsd = runs.reduce((sum, run) => sum + run.actualCredits * getRevenuePerCredit(account), 0);
+    const grossMarginUsd = revenueUsd - costUsd;
+
+    return {
+      accountSlug: account.slug,
+      accountName: account.name,
+      planName: account.planName,
+      runs: runs.length,
+      creditsBurned,
+      revenueUsd: Number(revenueUsd.toFixed(2)),
+      costUsd: Number(costUsd.toFixed(2)),
+      grossMarginUsd: Number(grossMarginUsd.toFixed(2)),
+      grossMarginPct: Number(((grossMarginUsd / Math.max(revenueUsd, 1)) * 100).toFixed(1)),
+      averageCreditsPerRun: Number((creditsBurned / Math.max(runs.length, 1)).toFixed(1)),
+      retryRatePct: Number(
+        ((runs.filter((run) => run.retryCount > 0).length / Math.max(runs.length, 1)) * 100).toFixed(1),
+      ),
+      approvalRatePct: Number(
+        ((runs.filter((run) => run.approvalsTriggered > 0).length / Math.max(runs.length, 1)) * 100).toFixed(1),
+      ),
+    };
+  });
+}
+
+export async function getWorkspaceAccessDirectory(accountSlug: string, sessionEmail?: string): Promise<WorkspaceAccessEntry[]> {
+  const account = await getAccountBySlug(accountSlug);
+  const workflows = await getAccountWorkflows(accountSlug);
+  const normalizedSlug = accountSlug.replace(/-/g, ".");
+  const ownerName = workflows[0]?.owner ?? account?.name ?? "Workspace Owner";
+  const ownerEmail = sessionEmail ?? `${normalizedSlug}@clientworkspace.buildvora.ai`;
+
+  return [
+    {
+      name: ownerName,
+      email: ownerEmail,
+      role: "Workspace owner",
+      responsibility: "Billing, publishing, concurrency limits, and final signoff.",
+    },
+    {
+      name: `${account?.name ?? "Workspace"} Approvals`,
+      email: `approvals@${normalizedSlug}.client`,
+      role: "Approver",
+      responsibility: "Releases sensitive workflow steps and external actions.",
+    },
+    {
+      name: `${account?.name ?? "Workspace"} Operations`,
+      email: `ops@${normalizedSlug}.client`,
+      role: "Operator",
+      responsibility: "Launches runs, reviews evidence, and resolves blockers.",
+    },
+    {
+      name: `${account?.name ?? "Workspace"} Read Only`,
+      email: `viewer@${normalizedSlug}.client`,
+      role: "Viewer",
+      responsibility: "Can review status, credits, and evidence without changing execution.",
+    },
+  ];
 }
 
 export async function estimateRunLaunch(input: {

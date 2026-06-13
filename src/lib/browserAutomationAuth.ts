@@ -4,6 +4,7 @@ import { getAccountBySlug } from "@/lib/browserAutomationPortal";
 import type { BrowserAutomationAccount, PlanType } from "@/lib/browserAutomationSeed";
 
 export type BillingStatus = "inactive" | "trialing" | "active" | "past_due";
+export type WorkspaceRole = "buildvora_admin" | "client_admin" | "approver" | "viewer";
 
 export type BrowserAutomationSession = {
   email: string;
@@ -24,6 +25,7 @@ export type BrowserAutomationSession = {
   trialCreditsTotal: number | null;
   trialCreditsRemaining: number | null;
   signedInAt: string;
+  role: WorkspaceRole;
 };
 
 export const SESSION_COOKIE_NAMES = {
@@ -45,7 +47,13 @@ export const SESSION_COOKIE_NAMES = {
   trialCreditsTotal: "buildvora_ba_trial_credits_total",
   trialCreditsRemaining: "buildvora_ba_trial_credits_remaining",
   signedInAt: "buildvora_ba_signed_in_at",
+  role: "buildvora_ba_role",
 } as const;
+
+function readEnv(name: string) {
+  const value = process.env[name];
+  return typeof value === "string" ? value.trim() : "";
+}
 
 function normalizeWorkspaceCode(workspaceCode: string) {
   return workspaceCode.trim().toUpperCase();
@@ -59,6 +67,33 @@ function resolveAccountSlug(workspaceCode: string) {
   }
 
   return "harbor-legal-group";
+}
+
+function inferWorkspaceRole(email: string) {
+  const normalized = email.trim().toLowerCase();
+  const adminEmails = readEnv("BROWSER_AUTOMATION_ADMIN_EMAILS")
+    .split(",")
+    .map((item) => item.trim().toLowerCase())
+    .filter(Boolean);
+  const domain = normalized.split("@")[1] ?? "";
+
+  if (
+    adminEmails.includes(normalized) ||
+    domain === "buildvora.ai" ||
+    domain === "roslix.com"
+  ) {
+    return "buildvora_admin" as const;
+  }
+
+  if (/owner|admin|founder|ops|maya|ari|felix/.test(normalized)) {
+    return "client_admin" as const;
+  }
+
+  if (/approve|review|legal|lead/.test(normalized)) {
+    return "approver" as const;
+  }
+
+  return "viewer" as const;
 }
 
 export function buildWorkspaceSession(input: {
@@ -79,6 +114,7 @@ export function buildWorkspaceSession(input: {
   trialExpiresAt?: string | null;
   trialCreditsTotal?: number | null;
   trialCreditsRemaining?: number | null;
+  role?: WorkspaceRole;
 }) {
   return {
     email: input.email.trim().toLowerCase(),
@@ -99,11 +135,16 @@ export function buildWorkspaceSession(input: {
     trialCreditsTotal: input.trialCreditsTotal ?? null,
     trialCreditsRemaining: input.trialCreditsRemaining ?? null,
     signedInAt: new Date().toISOString(),
+    role: input.role ?? inferWorkspaceRole(input.email),
   } satisfies BrowserAutomationSession;
 }
 
 export function hasWorkspaceAccess(session: BrowserAutomationSession | null) {
   return session?.billingStatus === "active" || session?.billingStatus === "trialing";
+}
+
+export function canAccessAdmin(session: BrowserAutomationSession | null) {
+  return session?.role === "buildvora_admin";
 }
 
 export async function getWorkspaceSession() {
@@ -153,6 +194,7 @@ export async function getWorkspaceSession() {
     trialExpiresAt: account?.trialExpiresAt ?? cookieStore.get(SESSION_COOKIE_NAMES.trialExpiresAt)?.value ?? null,
     trialCreditsTotal: account?.trialCreditsTotal ?? cookieNumber(SESSION_COOKIE_NAMES.trialCreditsTotal),
     trialCreditsRemaining: account?.trialCreditsRemaining ?? cookieNumber(SESSION_COOKIE_NAMES.trialCreditsRemaining),
+    role: (cookieStore.get(SESSION_COOKIE_NAMES.role)?.value as WorkspaceRole | undefined) ?? inferWorkspaceRole(email),
   } satisfies BrowserAutomationSession;
 }
 
