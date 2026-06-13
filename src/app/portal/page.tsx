@@ -116,6 +116,9 @@ export default async function PortalPage() {
   const snapshot = await getAdminControlPlaneSnapshot();
   const workers = await getWorkerNodes();
   const featuredWorkflow = workflows[0];
+  const pendingApprovals = approvals.slice(0, 2);
+  const latestLedger = ledger.slice(0, 4);
+  const latestAudit = snapshot.auditEvents.slice(0, 4);
 
   return (
     <main className="min-h-screen bg-[#f4f7fb] text-slate-950">
@@ -154,268 +157,121 @@ export default async function PortalPage() {
             </div>
           </div>
 
-          <div className="mt-5 grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+          <div className="mt-5 grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
             <section className="rounded-[1.8rem] border border-slate-200 bg-white p-6 shadow-[0_18px_55px_rgba(15,23,42,0.05)]">
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div className="max-w-2xl">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Welcome</p>
-                  <h2 className="mt-2 text-[1.8rem] font-semibold tracking-[-0.04em] text-slate-950">
-                    Build one workflow, test it properly, and only then ask for a paid commitment
-                  </h2>
-                  <p className="mt-3 text-sm leading-relaxed text-slate-600">
-                    The product should feel calm and obvious. A new client should understand what to do next, how far the trial goes, and when the upgrade becomes justified.
-                  </p>
-                </div>
-                <div className="rounded-[1.2rem] border border-slate-200 bg-[#f8fafc] px-4 py-4 text-sm text-slate-600">
-                  <p className="font-semibold text-slate-950">Trial policy</p>
-                  <p className="mt-2">25 credits included</p>
-                  <p>3 days active</p>
-                  <p>$25 value at top-up pricing</p>
-                </div>
-              </div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Overview</p>
+              <h2 className="mt-2 text-[1.8rem] font-semibold tracking-[-0.04em] text-slate-950">
+                Trial to production in one workspace
+              </h2>
+              <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-600">
+                New customers should immediately understand three things: what the trial includes, what they should do next, and how to tell if the workflow is worth paying for.
+              </p>
 
               <div className="mt-5 grid gap-3 md:grid-cols-3">
-                <StepCard step="1. Trial" title="Sign in and start free" note="A new workspace should open immediately with enough room to prove one real automation." />
-                <StepCard step="2. Build" title="Create the workflow" note="Use voice or a structured workflow to generate the first scoped automation." />
-                <StepCard step="3. Validate" title="Run tests before paying" note="Use the trial budget to confirm selectors, approvals, and execution flow." />
-              </div>
-            </section>
-
-            <aside className="rounded-[1.8rem] border border-slate-200 bg-[#f8fafc] p-6 shadow-[0_18px_55px_rgba(15,23,42,0.05)]">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">25-credit runway</p>
-                  <h2 className="mt-2 text-xl font-semibold tracking-[-0.03em] text-slate-950">What a customer can actually do before paying</h2>
-                </div>
-                <span className="rounded-full border border-sky-200 bg-white px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-sky-700">
-                  no card required
-                </span>
+                <MetricCard label="Credits" value={account.availableCredits.toLocaleString()} note={account.planName} />
+                <MetricCard label="Workflows" value={String(workflows.length)} note="Provisioned and launchable" />
+                <MetricCard label="Approvals" value={String(approvals.length)} note="Waiting on release" />
               </div>
 
               <div className="mt-5 grid gap-3">
                 {[
-                  ["Build workflow from voice", "5 credits", "Create the first automation draft with a real scope and estimate."],
-                  ["Run test one", "10 credits", "Validate the first browser path and review where approvals land."],
-                  ["Run test two", "10 credits", "Confirm that the workflow repeats cleanly before an upgrade decision."],
-                ].map(([title, credits, note]) => (
-                  <div key={title} className="rounded-[1rem] border border-slate-200 bg-white px-4 py-4">
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="text-sm font-semibold text-slate-950">{title}</p>
-                      <p className="text-sm font-semibold text-sky-700">{credits}</p>
-                    </div>
-                    <p className="mt-2 text-sm leading-relaxed text-slate-600">{note}</p>
-                  </div>
-                ))}
-              </div>
-            </aside>
-          </div>
-
-          <div className="mt-5 grid gap-3 md:grid-cols-3 xl:grid-cols-6">
-            <MetricCard label="Credits" value={account.availableCredits.toLocaleString()} note={account.planName} />
-            <MetricCard label="Workflows" value={String(workflows.length)} note="Provisioned and launchable" />
-            <MetricCard label="Approvals" value={String(approvals.length)} note="Waiting on release" />
-            <MetricCard label="Active runs" value={String(snapshot.totals.activeRuns)} note="Running, queued, blocked" />
-            <MetricCard label="Queue depth" value={String(snapshot.totals.queueDepth)} note="Across worker fleet" />
-            <MetricCard label="Worker alerts" value={String(snapshot.totals.degradedWorkers)} note="Operator attention" />
-          </div>
-
-          <div className="mt-4 grid gap-4 xl:grid-cols-[1fr_0.9fr]">
-            <div className="rounded-2xl border border-sky-200 bg-[linear-gradient(135deg,#eff6ff_0%,#ffffff_55%,#ecfeff_100%)] p-5">
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div className="max-w-2xl">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-sky-700">What 25 credits gets you</p>
-                  <h2 className="mt-2 text-xl font-semibold tracking-[-0.03em] text-slate-950">$25 of usable product value, not just a teaser</h2>
-                  <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                    The trial is enough to build a real workflow and test it in a meaningful way before paying.
-                  </p>
-                </div>
-                <span className="rounded-full border border-sky-200 bg-white px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-sky-700">
-                  25 credits = $25 value
-                </span>
-              </div>
-
-              <div className="mt-4 grid gap-3">
-                <TrialValueRow
-                  label="Workflow build from voice"
-                  credits="5 credits"
-                  widthClass="w-[20%]"
-                  note="Enough to turn a spoken workflow into a real automation draft with scope and estimated burn."
-                />
-                <TrialValueRow
-                  label="Light test run"
-                  credits="10 credits"
-                  widthClass="w-[40%]"
-                  note="Use one test to validate selectors, approvals, and the expected handoff."
-                />
-                <TrialValueRow
-                  label="Standard run"
-                  credits="18 credits"
-                  widthClass="w-[72%]"
-                  note="A more realistic run with more steps, richer verification, and stronger proof of value."
-                />
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_10px_30px_rgba(15,23,42,0.05)]">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">First 72 hours</p>
-                  <h2 className="mt-2 text-xl font-semibold tracking-[-0.03em] text-slate-950">The path should feel obvious</h2>
-                </div>
-                <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-                  simple onboarding
-                </span>
-              </div>
-
-              <div className="mt-4 grid gap-3">
-                {[
-                  ["Hour 0", "Sign in and start the free workspace", "No sales call needed to begin."],
-                  ["Day 1", "Describe the workflow and generate the draft", "The user should understand the scope and estimate immediately."],
-                  ["Day 2", "Run one or two meaningful tests", "Use the credits to prove the browser path and approval flow."],
-                  ["Day 3", "Upgrade only if the workflow deserves production", "The credit model becomes the operating model after proof."],
-                ].map(([time, title, note]) => (
+                  ["1. Start free", "A new workspace gets 25 credits across 3 days, with no card required up front."],
+                  ["2. Build the workflow", "Use voice or a structured path to create the first automation draft."],
+                  ["3. Validate with tests", "Use the trial to prove selectors, approvals, and repeatability before upgrade."],
+                ].map(([title, note]) => (
                   <div key={title} className="rounded-[1rem] border border-slate-200 bg-[#f8fafc] px-4 py-4">
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="text-sm font-semibold text-slate-950">{title}</p>
-                      <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-sky-700">{time}</span>
-                    </div>
-                    <p className="mt-2 text-sm leading-relaxed text-slate-600">{note}</p>
+                    <p className="text-sm font-semibold text-slate-950">{title}</p>
+                    <p className="mt-1 text-sm leading-relaxed text-slate-600">{note}</p>
                   </div>
                 ))}
               </div>
-            </div>
-          </div>
-        </div>
-      </section>
+            </section>
 
-      <section className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex max-w-[1320px] flex-wrap gap-2 px-6 py-3 md:px-8">
-          {[
-            ["#launch", "Launch"],
-            ["#approvals", "Approvals"],
-            ["#runs", "Runs"],
-            ["#ops", "Ops"],
-            ["#access", "Access"],
-          ].map(([href, label]) => (
-            <a
-              key={href}
-              href={href}
-              className="rounded-full border border-slate-200 bg-[#f7f8fb] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600 transition hover:border-[#0071e3]/20 hover:bg-[#f2f8ff] hover:text-[#0071e3]"
-            >
-              {label}
-            </a>
-          ))}
-        </div>
-      </section>
-
-      <div className="mx-auto grid max-w-[1320px] gap-6 px-6 py-6 md:px-8 xl:grid-cols-[1.15fr_0.85fr]">
-        <div className="grid gap-6">
-          <section id="launch" className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div>
-                <p className="tech text-[10px] uppercase tracking-[0.24em] text-[#0071e3]">Launch desk</p>
-                <h2 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950">{featuredWorkflow?.name}</h2>
-                <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-600">{featuredWorkflow?.summary}</p>
+            <section className="rounded-[1.8rem] border border-slate-200 bg-white p-6 shadow-[0_18px_55px_rgba(15,23,42,0.05)]">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Featured workflow</p>
+                  <h2 className="mt-2 text-xl font-semibold tracking-[-0.03em] text-slate-950">{featuredWorkflow?.name}</h2>
+                  <p className="mt-2 text-sm leading-relaxed text-slate-600">{featuredWorkflow?.summary}</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <StatusPill tone={riskTone(featuredWorkflow?.riskLevel ?? "low")}>{featuredWorkflow?.riskLevel} risk</StatusPill>
+                  <StatusPill tone="blue">{featuredWorkflow?.estimatedCredits}</StatusPill>
+                </div>
               </div>
-              <div className="flex flex-wrap gap-2">
-                <StatusPill tone={riskTone(featuredWorkflow?.riskLevel ?? "low")}>{featuredWorkflow?.riskLevel} risk</StatusPill>
-                <StatusPill tone="blue">{featuredWorkflow?.estimatedCredits}</StatusPill>
-                <StatusPill tone={tone(featuredWorkflow?.lastRunStatus ?? "slate")}>{featuredWorkflow?.lastRunStatus.replace(/_/g, " ")}</StatusPill>
-              </div>
-            </div>
 
-            <div className="mt-5 grid gap-4 xl:grid-cols-[1.02fr_0.98fr]">
-              <div className="rounded-2xl border border-slate-200 bg-[#0f172a] p-4">
+              <div className="mt-5 rounded-[1.5rem] border border-slate-200 bg-[#0f172a] p-4">
                 {featuredWorkflow ? <BrowserAutomationLaunchSimulator workflowSlug={featuredWorkflow.slug} /> : null}
               </div>
-              <div className="rounded-2xl border border-slate-200 bg-[#f8fafc] p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm font-semibold text-slate-950">Workflow matrix</p>
-                  <Link href="/workspace/browser-automation" className="text-xs font-semibold uppercase tracking-[0.16em] text-[#0071e3]">
-                    Full workspace
-                  </Link>
+            </section>
+          </div>
+
+          <div className="mt-5 grid gap-4 xl:grid-cols-3">
+            <section className="rounded-2xl border border-sky-200 bg-[linear-gradient(135deg,#eff6ff_0%,#ffffff_55%,#ecfeff_100%)] p-5">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-sky-700">What 25 credits gets you</p>
+                  <h2 className="mt-2 text-xl font-semibold tracking-[-0.03em] text-slate-950">$25 of usable product value</h2>
                 </div>
-                <div className="mt-4 overflow-hidden rounded-[1.2rem] border border-slate-200 bg-white">
-                  <div className="grid grid-cols-[1.1fr_0.72fr_0.72fr] gap-3 bg-[#f5f5f7] px-4 py-3 text-[10px] uppercase tracking-[0.18em] text-slate-500">
-                    <span>Workflow</span>
-                    <span>Status</span>
-                    <span>Credits</span>
+                <span className="rounded-full border border-sky-200 bg-white px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-sky-700">
+                  trial runway
+                </span>
+              </div>
+
+              <div className="mt-4 grid gap-3">
+                <TrialValueRow label="Workflow build from voice" credits="5 credits" widthClass="w-[20%]" note="Create the automation draft with a real scope and estimate." />
+                <TrialValueRow label="Light test run" credits="10 credits" widthClass="w-[40%]" note="Validate selectors, approvals, and the first browser path." />
+                <TrialValueRow label="Second test or standard run" credits="10 to 18 credits" widthClass="w-[72%]" note="Use the remaining budget to confirm repeatability or attempt a richer run." />
+              </div>
+            </section>
+
+            <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_10px_30px_rgba(15,23,42,0.05)]">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">First 72 hours</p>
+              <h2 className="mt-2 text-xl font-semibold tracking-[-0.03em] text-slate-950">Keep the path obvious</h2>
+              <div className="mt-4 grid gap-3">
+                {[
+                  ["Hour 0", "Sign in and open the free workspace."],
+                  ["Day 1", "Generate the workflow draft and review the estimate."],
+                  ["Day 2", "Run one or two meaningful tests."],
+                  ["Day 3", "Upgrade only if the workflow deserves production."],
+                ].map(([time, note]) => (
+                  <div key={time} className="rounded-[1rem] border border-slate-200 bg-[#f8fafc] px-4 py-4">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-sky-700">{time}</p>
+                    <p className="mt-2 text-sm leading-relaxed text-slate-600">{note}</p>
                   </div>
-                  {workflows.slice(0, 5).map((workflow) => (
-                    <Link
-                      key={workflow.id}
-                      href={`/workspace/browser-automation/workflows/${workflow.slug}`}
-                      className="grid grid-cols-[1.1fr_0.72fr_0.72fr] gap-3 border-t border-slate-200 px-4 py-4 text-sm text-slate-600 transition hover:bg-[#f8fbff]"
-                    >
-                      <div>
-                        <p className="font-semibold text-slate-950">{workflow.name}</p>
-                        <p className="mt-1 text-xs uppercase tracking-[0.14em] text-slate-500">{workflow.systems.join(" / ")}</p>
-                      </div>
-                      <div className="self-center">
-                        <StatusPill tone={tone(workflow.lastRunStatus)}>{workflow.lastRunStatus.replace(/_/g, " ")}</StatusPill>
-                      </div>
-                      <div className="self-center text-slate-950">{workflow.estimatedCredits}</div>
-                    </Link>
-                  ))}
+                ))}
+              </div>
+            </section>
+
+            <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_10px_30px_rgba(15,23,42,0.05)]">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Need attention</p>
+              <h2 className="mt-2 text-xl font-semibold tracking-[-0.03em] text-slate-950">What matters right now</h2>
+              <div className="mt-4 grid gap-3">
+                <div className="rounded-[1rem] border border-slate-200 bg-[#f8fafc] px-4 py-4">
+                  <p className="text-sm font-semibold text-slate-950">Pending approvals</p>
+                  <p className="mt-1 text-sm text-slate-600">{approvals.length} waiting on release.</p>
+                </div>
+                <div className="rounded-[1rem] border border-slate-200 bg-[#f8fafc] px-4 py-4">
+                  <p className="text-sm font-semibold text-slate-950">Queue depth</p>
+                  <p className="mt-1 text-sm text-slate-600">{snapshot.totals.queueDepth} runs across the worker fleet.</p>
+                </div>
+                <div className="rounded-[1rem] border border-slate-200 bg-[#f8fafc] px-4 py-4">
+                  <p className="text-sm font-semibold text-slate-950">Disconnected connections</p>
+                  <p className="mt-1 text-sm text-slate-600">{snapshot.totals.disconnectedConnections} execution blockers need review.</p>
                 </div>
               </div>
-            </div>
-          </section>
+            </section>
+          </div>
+        </div>
+      </section>
 
-          <section id="approvals" className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="mx-auto grid max-w-[1320px] gap-6 px-6 py-6 md:px-8 xl:grid-cols-[1.08fr_0.92fr]">
+        <div className="grid gap-6">
+          <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <p className="tech text-[10px] uppercase tracking-[0.24em] text-[#0071e3]">Approval queue</p>
-                <h2 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950">Protected actions waiting on release</h2>
-              </div>
-              <Link href="/workspace/browser-automation/approvals" className="rounded-full border border-slate-200 bg-[#f5f5f7] px-4 py-2 text-sm font-semibold text-slate-950 transition hover:border-[#0071e3]/20 hover:bg-[#f5f9ff]">
-                Full inbox
-              </Link>
-            </div>
-
-            <div className="mt-5 grid gap-4">
-              {approvals.length === 0 ? (
-                <div className="rounded-[1.4rem] border border-slate-200 bg-[#f8fafc] px-5 py-4 text-sm text-slate-600">
-                  No approvals are currently blocking execution.
-                </div>
-              ) : (
-                approvals.map((approval) => (
-                  <article key={approval.id} className="rounded-[1.5rem] border border-slate-200 bg-[#fbfcff] p-5">
-                    <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
-                      <div>
-                        <div className="flex flex-wrap items-center gap-3">
-                          <p className="text-lg font-semibold tracking-[-0.03em] text-slate-950">{approval.stepLabel}</p>
-                          <StatusPill tone="amber">{approval.status}</StatusPill>
-                        </div>
-                        <p className="mt-2 text-sm leading-relaxed text-slate-600">{approval.context}</p>
-                      </div>
-                      <div className="grid gap-2 text-sm text-slate-500">
-                        <div className="flex items-center justify-between gap-3 rounded-[1rem] bg-white px-4 py-3">
-                          <span>Run</span>
-                          <span className="font-semibold text-slate-950">{approval.runId}</span>
-                        </div>
-                        <div className="flex items-center justify-between gap-3 rounded-[1rem] bg-white px-4 py-3">
-                          <span>Requested from</span>
-                          <span className="font-semibold text-slate-950">{approval.requestedFrom}</span>
-                        </div>
-                        <div className="flex items-center justify-between gap-3 rounded-[1rem] bg-white px-4 py-3">
-                          <span>Expires</span>
-                          <span className="font-semibold text-slate-950">{approval.expiresAt}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <BrowserAutomationApprovalActions approvalId={approval.id} fallbackApprover={approval.requestedFrom} />
-                  </article>
-                ))
-              )}
-            </div>
-          </section>
-
-          <section id="runs" className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <p className="tech text-[10px] uppercase tracking-[0.24em] text-[#0071e3]">Execution ledger</p>
-                <h2 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950">Runs, credit settlement, and operator controls</h2>
+                <p className="tech text-[10px] uppercase tracking-[0.24em] text-[#0071e3]">Execution</p>
+                <h2 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950">Recent runs and credit movement</h2>
               </div>
               <Link href="/workspace/browser-automation" className="rounded-full border border-slate-200 bg-[#f5f5f7] px-4 py-2 text-sm font-semibold text-slate-950 transition hover:border-[#0071e3]/20 hover:bg-[#f5f9ff]">
                 Workspace detail
@@ -428,7 +284,7 @@ export default async function PortalPage() {
               <div className="rounded-[1.4rem] border border-slate-200 bg-[#f8fafc] p-4">
                 <p className="text-sm font-semibold text-slate-950">Latest credit movements</p>
                 <div className="mt-4 grid gap-3">
-                  {ledger.slice(0, 4).map((entry) => (
+                  {latestLedger.map((entry) => (
                     <div key={entry.id} className="flex items-center justify-between gap-3 rounded-[1rem] bg-white px-4 py-3 text-sm text-slate-600">
                       <span>{entry.note}</span>
                       <span className="font-semibold text-slate-950">{entry.amount > 0 ? `+${entry.amount}` : entry.amount}</span>
@@ -442,11 +298,52 @@ export default async function PortalPage() {
         </div>
 
         <div className="grid gap-6">
-          <section id="ops" className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <p className="tech text-[10px] uppercase tracking-[0.24em] text-[#0071e3]">Operations backend</p>
-                <h2 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950">Queue, workers, and commercial posture</h2>
+                <p className="tech text-[10px] uppercase tracking-[0.24em] text-[#0071e3]">Approvals</p>
+                <h2 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950">Protected actions waiting on release</h2>
+              </div>
+              <Link href="/workspace/browser-automation/approvals" className="rounded-full border border-slate-200 bg-[#f5f5f7] px-4 py-2 text-sm font-semibold text-slate-950 transition hover:border-[#0071e3]/20 hover:bg-[#f5f9ff]">
+                Full inbox
+              </Link>
+            </div>
+
+            <div className="mt-5 grid gap-4">
+              {pendingApprovals.length === 0 ? (
+                <div className="rounded-[1.4rem] border border-slate-200 bg-[#f8fafc] px-5 py-4 text-sm text-slate-600">
+                  No approvals are currently blocking execution.
+                </div>
+              ) : (
+                pendingApprovals.map((approval) => (
+                  <article key={approval.id} className="rounded-[1.4rem] border border-slate-200 bg-[#fbfcff] p-5">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <p className="text-base font-semibold text-slate-950">{approval.stepLabel}</p>
+                      <StatusPill tone="amber">{approval.status}</StatusPill>
+                    </div>
+                    <p className="mt-2 text-sm leading-relaxed text-slate-600">{approval.context}</p>
+                    <div className="mt-4 grid gap-2 text-sm text-slate-500">
+                      <div className="flex items-center justify-between gap-3 rounded-[1rem] bg-white px-4 py-3">
+                        <span>Run</span>
+                        <span className="font-semibold text-slate-950">{approval.runId}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-3 rounded-[1rem] bg-white px-4 py-3">
+                        <span>Requested from</span>
+                        <span className="font-semibold text-slate-950">{approval.requestedFrom}</span>
+                      </div>
+                    </div>
+                    <BrowserAutomationApprovalActions approvalId={approval.id} fallbackApprover={approval.requestedFrom} />
+                  </article>
+                ))
+              )}
+            </div>
+          </section>
+
+          <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="tech text-[10px] uppercase tracking-[0.24em] text-[#0071e3]">Operations</p>
+                <h2 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950">Workers and backend posture</h2>
               </div>
               <Link href="/admin/browser-automation" className="rounded-full border border-slate-200 bg-[#f5f5f7] px-4 py-2 text-sm font-semibold text-slate-950 transition hover:border-[#0071e3]/20 hover:bg-[#f5f9ff]">
                 Full control plane
@@ -454,16 +351,16 @@ export default async function PortalPage() {
             </div>
 
             <div className="mt-5 grid gap-3 md:grid-cols-2">
+              <MetricCard label="Active runs" value={String(snapshot.totals.activeRuns)} note="Running, queued, blocked" />
+              <MetricCard label="Queue depth" value={String(snapshot.totals.queueDepth)} note="Across worker fleet" />
               <MetricCard label="Accounts" value={String(snapshot.totals.accounts)} note="Provisioned tenants" />
               <MetricCard label="Revenue" value={`$${snapshot.totals.monthlyRevenue.toLocaleString()}`} note="Live monthly value" />
-              <MetricCard label="Drafts" value={String(snapshot.totals.drafts)} note="Awaiting release" />
-              <MetricCard label="Disconnected" value={String(snapshot.totals.disconnectedConnections)} note="Execution blockers" />
             </div>
 
             <PortalWorkerOpsTable workers={workers} />
 
             <div className="mt-5 grid gap-3">
-              {snapshot.auditEvents.slice(0, 4).map((event) => (
+              {latestAudit.map((event) => (
                 <div key={event.id} className="rounded-[1.2rem] border border-slate-200 bg-[#f8fafc] px-4 py-4">
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-sm font-semibold text-slate-950">{event.event}</p>
@@ -475,9 +372,9 @@ export default async function PortalPage() {
             </div>
           </section>
 
-          <section id="access" className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <div>
-                <p className="tech text-[10px] uppercase tracking-[0.24em] text-[#0071e3]">Access</p>
+              <p className="tech text-[10px] uppercase tracking-[0.24em] text-[#0071e3]">Access</p>
               <h2 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950">Client access and next steps</h2>
             </div>
 
