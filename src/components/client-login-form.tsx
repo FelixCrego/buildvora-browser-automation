@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 
 export default function ClientLoginForm() {
   const router = useRouter();
-  const [email, setEmail] = useState("ops@harborlegalgroup.com");
-  const [workspaceCode, setWorkspaceCode] = useState("HLG-OPS-01");
+  const [email, setEmail] = useState("");
+  const [workspaceCode, setWorkspaceCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -67,6 +67,7 @@ export default function ClientLoginForm() {
             type="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
+            placeholder="you@company.com"
             className="mt-2 w-full rounded-[1.25rem] border border-slate-200 bg-white px-4 py-3 text-slate-950 outline-none transition focus:border-[#0071e3]"
           />
         </label>
@@ -75,6 +76,7 @@ export default function ClientLoginForm() {
           <input
             value={workspaceCode}
             onChange={(event) => setWorkspaceCode(event.target.value)}
+            placeholder="TRIAL-ALPHA-01"
             className="mt-2 w-full rounded-[1.25rem] border border-slate-200 bg-white px-4 py-3 text-slate-950 outline-none transition focus:border-[#0071e3]"
           />
         </label>

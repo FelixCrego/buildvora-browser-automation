@@ -9,6 +9,7 @@ import {
   CreditLimitError,
 } from "@buildvora/browser-automation";
 import { CREDIT_EXPLAINER, TRIAL_POLICY } from "./browserAutomationBilling";
+import type { BrowserAutomationSession } from "./browserAutomationAuth";
 import type {
   AuditEvent,
   AuditSeverity,
@@ -1234,6 +1235,42 @@ export function getPrimaryWorkspaceAccount() {
   return getBrowserAutomationAccounts()[0];
 }
 
+export function resolveWorkspaceAccount(session: BrowserAutomationSession | null) {
+  if (!session) {
+    return getPrimaryWorkspaceAccount();
+  }
+
+  const existing = getAccountBySlug(session.accountSlug);
+  if (existing) {
+    return existing;
+  }
+
+  return {
+    id: `acct_${session.accountSlug}`,
+    slug: session.accountSlug,
+    name: session.accountName ?? "Client Workspace",
+    vertical: session.planType === "trial" ? "Self-Serve Trial" : "Browser Automation",
+    planType: session.planType ?? "trial",
+    planName: session.planName ?? "Free Trial",
+    billingStatus: session.billingStatus,
+    monthlyCredits: session.monthlyCredits ?? session.trialCreditsTotal ?? 0,
+    availableCredits: session.availableCredits ?? session.trialCreditsRemaining ?? 0,
+    softLimitCredits: 0,
+    activeWorkflows: 0,
+    pendingApprovals: 0,
+    monthlySpendUsd: 0,
+    renewalDate: session.trialExpiresAt?.slice(0, 10) ?? nowIso().slice(0, 10),
+    seats: 1,
+    status: session.billingStatus === "trialing" ? "trial" : session.billingStatus === "active" ? "active" : "restricted",
+    concurrencyLimit: session.concurrencyLimit ?? 1,
+    canPublish: session.canPublish ?? false,
+    trialStartedAt: session.signedInAt,
+    trialExpiresAt: session.trialExpiresAt,
+    trialCreditsTotal: session.trialCreditsTotal ?? 0,
+    trialCreditsRemaining: session.trialCreditsRemaining ?? 0,
+  } satisfies BrowserAutomationAccount;
+}
+
 export function ensureWorkspaceAccount(input: { email: string; workspaceCode: string }) {
   const state = readState();
   syncAccountDerivedFields(state);
@@ -1556,6 +1593,66 @@ export function grantCreditsToAccount(input: {
     target: input.accountSlug,
     severity: "info",
     detail: `${input.amount} credits added to ${account.name}.`,
+  });
+
+  syncAccountDerivedFields(state);
+  writeState(state);
+  return state.accounts.find((item) => item.slug === input.accountSlug) ?? account;
+}
+
+export function spendCreditsFromAccount(input: {
+  accountSlug: string;
+  amount: number;
+  note: string;
+  actor?: string;
+  source?: "billing" | "run" | "admin";
+  externalRef?: string;
+}) {
+  const state = readState();
+  const account = state.accounts.find((item) => item.slug === input.accountSlug);
+
+  if (!account) {
+    throw new Error("Account not found.");
+  }
+
+  if (input.amount <= 0) {
+    throw new Error("Debit amount must be positive.");
+  }
+
+  const externalRef = input.externalRef ?? null;
+  if (
+    externalRef &&
+    state.creditLedger.some(
+      (entry) => entry.accountSlug === input.accountSlug && entry.note.includes(externalRef),
+    )
+  ) {
+    return state.accounts.find((item) => item.slug === input.accountSlug) ?? account;
+  }
+
+  const balance = getBalanceFromLedger(state, input.accountSlug);
+  if (balance < input.amount) {
+    throw new CreditLimitError(`Insufficient credits for ${input.accountSlug}.`);
+  }
+
+  const nextBalance = balance - input.amount;
+  state.creditLedger.unshift({
+    id: `led_${randomUUID().slice(0, 8)}`,
+    accountSlug: input.accountSlug,
+    type: "debit",
+    amount: -input.amount,
+    balanceAfter: nextBalance,
+    createdAt: nowIso(),
+    note: externalRef ? `${input.note} [ref:${externalRef}]` : input.note,
+    source: input.source ?? "run",
+  });
+
+  addAuditEvent(state, {
+    accountSlug: input.accountSlug,
+    actor: input.actor ?? "system",
+    event: "credits.debited",
+    target: input.accountSlug,
+    severity: "info",
+    detail: `${input.amount} credits consumed for ${input.note}.`,
   });
 
   syncAccountDerivedFields(state);

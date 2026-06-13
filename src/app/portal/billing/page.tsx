@@ -10,13 +10,13 @@ import {
   getPublicPayPalClientId,
 } from "@/lib/browserAutomationBilling";
 import { getWorkspaceSession } from "@/lib/browserAutomationAuth";
-import { getAccountBySlug, getPrimaryWorkspaceAccount } from "@/lib/browserAutomationPortal";
+import { resolveWorkspaceAccount } from "@/lib/browserAutomationPortal";
 
 export default async function BrowserAutomationBillingPage() {
   const session = await getWorkspaceSession();
-  const account = session ? getAccountBySlug(session.accountSlug) ?? getPrimaryWorkspaceAccount() : getPrimaryWorkspaceAccount();
+  const account = resolveWorkspaceAccount(session);
   const pricingCards = getPricingCards();
-  const checkoutPlans = BILLING_PLANS.filter((plan) => plan.id !== "starter");
+  const checkoutPlans = BILLING_PLANS;
 
   return (
     <main className="min-h-screen bg-[#fbfbfd] px-6 py-16 text-slate-950 md:px-10 md:py-24">

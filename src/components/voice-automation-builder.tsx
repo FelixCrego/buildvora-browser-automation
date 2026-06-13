@@ -38,6 +38,7 @@ export default function VoiceAutomationBuilder() {
   const [isListening, setIsListening] = useState(false);
   const [result, setResult] = useState<VoiceBuilderResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [creditNotice, setCreditNotice] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const speechSupported = useMemo(
@@ -47,6 +48,7 @@ export default function VoiceAutomationBuilder() {
 
   const startListening = () => {
     setError(null);
+    setCreditNotice(null);
 
     if (!speechSupported) {
       setError("Speech recognition is not available in this browser. Use typed mode instead.");
@@ -110,6 +112,7 @@ export default function VoiceAutomationBuilder() {
           ok?: boolean;
           message?: string;
           result?: VoiceBuilderResult;
+          creditsDebited?: number;
         };
 
         if (!response.ok || !payload.result) {
@@ -117,6 +120,9 @@ export default function VoiceAutomationBuilder() {
         }
 
         setResult(payload.result);
+        if (payload.creditsDebited) {
+          setCreditNotice(`${payload.creditsDebited} credits were used to build this automation scope.`);
+        }
       } catch (builderError) {
         setError(builderError instanceof Error ? builderError.message : "Unexpected voice builder error.");
       }
@@ -204,6 +210,7 @@ export default function VoiceAutomationBuilder() {
             </button>
           </div>
           {error ? <p className="mt-4 text-sm text-rose-600">{error}</p> : null}
+          {creditNotice ? <p className="mt-4 text-sm text-emerald-700">{creditNotice}</p> : null}
         </div>
       </div>
 

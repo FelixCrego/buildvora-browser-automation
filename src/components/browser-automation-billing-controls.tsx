@@ -229,6 +229,8 @@ export default function BrowserAutomationBillingControls({
           <p className="mt-1 text-sm text-slate-600">
             {billingStatus === "active"
               ? `Workspace unlocked on the ${activePlan ?? "active"} plan.`
+              : billingStatus === "trialing"
+                ? "Trial access is active. Upgrade before the 3-day trial ends to keep publishing and running in production."
               : "Workspace access is blocked until a paid plan or review unlock is active."}
           </p>
         </div>

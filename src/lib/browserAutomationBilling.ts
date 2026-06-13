@@ -58,6 +58,7 @@ export const BILLING_PLANS: BillingPlan[] = [
     name: "Starter",
     mode: "subscription",
     description: "For first live automations and small teams moving from test runs into controlled production usage.",
+    planIdEnv: "PAYPAL_PLAN_STARTER",
     monthlyLabel: "$99 / month",
     creditsLabel: "100 monthly credits",
     creditsAmount: 100,

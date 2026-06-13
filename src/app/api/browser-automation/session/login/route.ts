@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { buildWorkspaceSession, SESSION_COOKIE_NAMES } from "@/lib/browserAutomationAuth";
+import { applyWorkspaceAccountCookies, buildWorkspaceSession, SESSION_COOKIE_NAMES } from "@/lib/browserAutomationAuth";
 import { ensureWorkspaceAccount } from "@/lib/browserAutomationPortal";
 
 type LoginPayload = {
@@ -30,10 +30,20 @@ export async function POST(request: Request) {
       email,
       workspaceCode,
       accountSlug: account.slug,
+      accountName: account.name,
+      planType: account.planType,
+      planName: account.planName,
       billingStatus: account.billingStatus,
       billingPlan: account.planType === "trial" ? "trial" : account.planType,
       billingProvider: account.planType === "trial" ? "trial" : "demo",
       billingReferenceId: account.planType === "trial" ? `trial:${account.slug}` : null,
+      availableCredits: account.availableCredits,
+      monthlyCredits: account.monthlyCredits,
+      concurrencyLimit: account.concurrencyLimit,
+      canPublish: account.canPublish,
+      trialExpiresAt: account.trialExpiresAt,
+      trialCreditsTotal: account.trialCreditsTotal,
+      trialCreditsRemaining: account.trialCreditsRemaining,
     });
     const nextPath = session.billingStatus === "trialing" || session.billingStatus === "active"
       ? "/workspace/browser-automation"
@@ -48,6 +58,7 @@ export async function POST(request: Request) {
     response.cookies.set(SESSION_COOKIE_NAMES.billingProvider, session.billingProvider, { httpOnly: true, sameSite: "lax", path: "/" });
     response.cookies.set(SESSION_COOKIE_NAMES.billingReferenceId, session.billingReferenceId ?? "", { httpOnly: true, sameSite: "lax", path: "/" });
     response.cookies.set(SESSION_COOKIE_NAMES.signedInAt, session.signedInAt, { httpOnly: true, sameSite: "lax", path: "/" });
+    applyWorkspaceAccountCookies(response, account);
 
     return response;
   } catch (error) {

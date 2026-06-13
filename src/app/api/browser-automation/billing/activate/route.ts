@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { activateAccountBilling, grantCreditsToAccount } from "@/lib/browserAutomationPortal";
+import { activateAccountBilling, getAccountBySlug, grantCreditsToAccount } from "@/lib/browserAutomationPortal";
 import { resolveCheckoutActivation } from "@/lib/browserAutomationBilling";
-import { getWorkspaceSession, SESSION_COOKIE_NAMES } from "@/lib/browserAutomationAuth";
+import { applyWorkspaceAccountCookies, getWorkspaceSession, SESSION_COOKIE_NAMES } from "@/lib/browserAutomationAuth";
 
 type ActivatePayload = {
   planId?: string;
@@ -64,6 +64,10 @@ export async function POST(request: Request) {
       { httpOnly: true, sameSite: "lax", path: "/" },
     );
     response.cookies.set(SESSION_COOKIE_NAMES.billingReferenceId, activation.billingReferenceId ?? "", { httpOnly: true, sameSite: "lax", path: "/" });
+    const account = getAccountBySlug(session.accountSlug);
+    if (account) {
+      applyWorkspaceAccountCookies(response, account);
+    }
 
     return response;
   } catch (error) {

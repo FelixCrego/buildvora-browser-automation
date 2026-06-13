@@ -62,6 +62,29 @@ const product = await paypalRequest(accessToken, "/v1/catalogs/products", {
   category: "SOFTWARE",
 });
 
+const starterPlan = await paypalRequest(accessToken, "/v1/billing/plans", {
+  product_id: product.id,
+  name: "BuildVora Starter",
+  description: "100 monthly credits for first live browser automations",
+  status: "ACTIVE",
+  billing_cycles: [
+    {
+      frequency: { interval_unit: "MONTH", interval_count: 1 },
+      tenure_type: "REGULAR",
+      sequence: 1,
+      total_cycles: 0,
+      pricing_scheme: {
+        fixed_price: { value: "99", currency_code: "USD" },
+      },
+    },
+  ],
+  payment_preferences: {
+    auto_bill_outstanding: true,
+    setup_fee_failure_action: "CONTINUE",
+    payment_failure_threshold: 3,
+  },
+});
+
 const operatorPlan = await paypalRequest(accessToken, "/v1/billing/plans", {
   product_id: product.id,
   name: "BuildVora Operator",
@@ -108,16 +131,64 @@ const scalePlan = await paypalRequest(accessToken, "/v1/billing/plans", {
   },
 });
 
+const operatorCouponPlan = await paypalRequest(accessToken, "/v1/billing/plans", {
+  product_id: product.id,
+  name: "BuildVora Operator TEST100OFF",
+  description: "1,800 monthly credits with a $100 testing discount",
+  status: "ACTIVE",
+  billing_cycles: [
+    {
+      frequency: { interval_unit: "MONTH", interval_count: 1 },
+      tenure_type: "REGULAR",
+      sequence: 1,
+      total_cycles: 0,
+      pricing_scheme: {
+        fixed_price: { value: "1400", currency_code: "USD" },
+      },
+    },
+  ],
+  payment_preferences: {
+    auto_bill_outstanding: true,
+    setup_fee_failure_action: "CONTINUE",
+    payment_failure_threshold: 3,
+  },
+});
+
+const scaleCouponPlan = await paypalRequest(accessToken, "/v1/billing/plans", {
+  product_id: product.id,
+  name: "BuildVora Scale TEST100OFF",
+  description: "4,800 monthly credits with a $100 testing discount",
+  status: "ACTIVE",
+  billing_cycles: [
+    {
+      frequency: { interval_unit: "MONTH", interval_count: 1 },
+      tenure_type: "REGULAR",
+      sequence: 1,
+      total_cycles: 0,
+      pricing_scheme: {
+        fixed_price: { value: "3800", currency_code: "USD" },
+      },
+    },
+  ],
+  payment_preferences: {
+    auto_bill_outstanding: true,
+    setup_fee_failure_action: "CONTINUE",
+    payment_failure_threshold: 3,
+  },
+});
+
 console.log(
   JSON.stringify(
     {
       environment,
       product_id: product.id,
+      PAYPAL_PLAN_STARTER: starterPlan.id,
       PAYPAL_PLAN_OPERATOR: operatorPlan.id,
       PAYPAL_PLAN_SCALE: scalePlan.id,
+      PAYPAL_PLAN_OPERATOR_TEST100OFF: operatorCouponPlan.id,
+      PAYPAL_PLAN_SCALE_TEST100OFF: scaleCouponPlan.id,
     },
     null,
     2,
   ),
 );
-

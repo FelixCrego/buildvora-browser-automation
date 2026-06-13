@@ -4,6 +4,8 @@ import {
   estimateWorkflowCredits,
 } from "@buildvora/browser-automation";
 import { NextResponse } from "next/server";
+import { applyWorkspaceAccountCookies, getWorkspaceSession, SESSION_COOKIE_NAMES } from "@/lib/browserAutomationAuth";
+import { getAccountBySlug, spendCreditsFromAccount } from "@/lib/browserAutomationPortal";
 
 type VoiceBuilderPayload = {
   company?: string;
@@ -22,6 +24,20 @@ function resolveBuilder() {
 
 export async function POST(request: Request) {
   try {
+    const session = await getWorkspaceSession();
+    if (!session) {
+      return NextResponse.json({ ok: false, message: "Sign in before building an automation." }, { status: 401 });
+    }
+
+    const persistedAccount = getAccountBySlug(session.accountSlug);
+    const availableCredits = persistedAccount?.availableCredits ?? session.availableCredits ?? session.trialCreditsRemaining ?? 0;
+    if (availableCredits < 5) {
+      return NextResponse.json(
+        { ok: false, message: "You need at least 5 credits remaining to build an automation scope." },
+        { status: 402 },
+      );
+    }
+
     const payload = (await request.json()) as VoiceBuilderPayload;
     const transcript = payload.transcript?.trim();
     const company = payload.company?.trim() || "Client Workspace";
@@ -62,8 +78,7 @@ export async function POST(request: Request) {
       transcript,
     });
     const estimate = estimateWorkflowCredits(draft.workflow);
-
-    return NextResponse.json({
+    const response = NextResponse.json({
       ok: true,
       result: {
         automationName: draft.workflow.name,
@@ -73,7 +88,7 @@ export async function POST(request: Request) {
         recommendedPlan:
           draft.workflow.riskLevel === "high"
             ? "Operator Deployment with guarded approval policies, then expand into a managed rollout after the first production loop stabilizes."
-            : "Operator Deployment for the initial workflow, followed by portfolio expansion after run quality is verified.",
+            : "Starter for early live runs, then Operator once recurring production usage and approval volume increase.",
         estimatedCreditsPerRun: `${estimate.estimatedCredits} estimated credits / run`,
         rolloutPath: [
           "Review the generated workflow draft and approval policy.",
@@ -83,7 +98,29 @@ export async function POST(request: Request) {
         ],
         runtimeModel: draft.metadata.model,
       },
+      creditsDebited: 5,
     });
+
+    if (persistedAccount) {
+      const updatedAccount = spendCreditsFromAccount({
+        accountSlug: session.accountSlug,
+        amount: 5,
+        note: `Voice builder automation scope for ${company}`,
+        actor: session.email,
+        source: "run",
+      });
+      applyWorkspaceAccountCookies(response, updatedAccount);
+    } else {
+      const nextCredits = availableCredits - 5;
+      response.cookies.set(SESSION_COOKIE_NAMES.availableCredits, String(nextCredits), { httpOnly: true, sameSite: "lax", path: "/" });
+      response.cookies.set(
+        SESSION_COOKIE_NAMES.trialCreditsRemaining,
+        String(Math.max(0, (session.trialCreditsRemaining ?? nextCredits) - 5)),
+        { httpOnly: true, sameSite: "lax", path: "/" },
+      );
+    }
+
+    return response;
   } catch (error) {
     return NextResponse.json(
       {

@@ -2,14 +2,13 @@ import Link from "next/link";
 import { Panel, StatCard, StatusPill } from "@/components/browser-automation-console";
 import { getWorkspaceSession } from "@/lib/browserAutomationAuth";
 import {
-  getAccountBySlug,
   getAccountApprovals,
   getBillingAuditEvents,
   getAccountConnections,
   getAccountLedger,
   getAccountRuns,
   getAccountWorkflows,
-  getPrimaryWorkspaceAccount,
+  resolveWorkspaceAccount,
 } from "@/lib/browserAutomationPortal";
 
 function toneForStatus(status: string) {
@@ -28,7 +27,7 @@ export default async function BrowserAutomationWorkspacePage({
   const params = searchParams ? await searchParams : undefined;
   const showWelcome = params?.welcome === "1";
   const session = await getWorkspaceSession();
-  const account = session ? getAccountBySlug(session.accountSlug) ?? getPrimaryWorkspaceAccount() : getPrimaryWorkspaceAccount();
+  const account = resolveWorkspaceAccount(session);
   const workflows = getAccountWorkflows(account.slug);
   const runs = getAccountRuns(account.slug);
   const approvals = getAccountApprovals(account.slug);
