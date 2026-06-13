@@ -81,6 +81,31 @@ function StepCard({
   );
 }
 
+function TrialValueRow({
+  label,
+  credits,
+  widthClass,
+  note,
+}: {
+  label: string;
+  credits: string;
+  widthClass: string;
+  note: string;
+}) {
+  return (
+    <div className="rounded-[1.1rem] border border-slate-200 bg-white p-4">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm font-semibold text-slate-950">{label}</p>
+        <p className="text-sm font-semibold text-sky-700">{credits}</p>
+      </div>
+      <div className="mt-3 h-2.5 rounded-full bg-slate-100">
+        <div className={`h-2.5 rounded-full bg-[linear-gradient(90deg,#0071e3_0%,#38bdf8_100%)] ${widthClass}`} />
+      </div>
+      <p className="mt-2 text-sm leading-relaxed text-slate-600">{note}</p>
+    </div>
+  );
+}
+
 export default async function PortalPage() {
   const account = await getPrimaryWorkspaceAccount();
   const workflows = await getAccountWorkflows(account.slug);
@@ -96,37 +121,73 @@ export default async function PortalPage() {
     <main className="min-h-screen bg-[#f4f7fb] text-slate-950">
       <section className="border-b border-slate-200 bg-white">
         <div className="mx-auto max-w-[1320px] px-6 py-5 md:px-8">
-          <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
             <div className="min-w-0">
               <p className="tech text-[10px] uppercase tracking-[0.24em] text-sky-700">BuildVora Browser Automation</p>
               <h1 className="mt-2 text-[1.45rem] font-semibold tracking-[-0.03em] text-slate-950 md:text-[1.9rem]">
-                Browser automation workspace
+                Browser automation that feels valuable before a customer pays
               </h1>
               <p className="mt-1 max-w-3xl text-sm leading-relaxed text-slate-500">
-                Launch workflows, monitor credits, review approvals, and step into operations from one software surface.
+                Give clients one serious workspace to build, test, approve, and run automations. The free trial is large enough to prove a real workflow, not just click around.
               </p>
+
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-700">
+                  3-day free trial
+                </span>
+                <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                  25 credits included
+                </span>
+                <span className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-sky-700">
+                  $25 value at launch pricing
+                </span>
+              </div>
+
+              <div className="mt-5 flex flex-wrap items-center gap-3">
+                <Link
+                  href="/portal/client/login"
+                  className="inline-flex rounded-xl bg-[#0f172a] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#111c33]"
+                >
+                  Start free trial
+                </Link>
+                <Link
+                  href="/workspace/browser-automation"
+                  className="inline-flex rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 transition hover:bg-slate-50"
+                >
+                  Open workspace
+                </Link>
+              </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-700">
-                3-day free trial
-              </span>
-              <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-                25 credits included
-              </span>
-              <Link
-                href="/portal/client/login"
-                className="inline-flex rounded-xl bg-[#0f172a] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#111c33]"
-              >
-                Start free trial
-              </Link>
-              <Link
-                href="/workspace/browser-automation"
-                className="inline-flex rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 transition hover:bg-slate-50"
-              >
-                Open workspace
-              </Link>
-            </div>
+            <aside className="rounded-[1.8rem] border border-[#0f172a] bg-[radial-gradient(circle_at_top_left,#1e3a8a_0%,#0f172a_58%,#020617_100%)] p-5 text-white shadow-[0_24px_80px_rgba(15,23,42,0.28)]">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-sky-200">Trial allocation</p>
+                  <h2 className="mt-2 text-2xl font-semibold tracking-[-0.03em]">25 credits ready on day one</h2>
+                </div>
+                <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-sky-100">
+                  no card required
+                </span>
+              </div>
+
+              <div className="mt-5 grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+                <div className="rounded-[1.2rem] border border-white/10 bg-white/5 p-4">
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-sky-200">Build</p>
+                  <p className="mt-2 text-lg font-semibold">1 workflow from voice</p>
+                  <p className="mt-1 text-sm text-slate-300">5 credits</p>
+                </div>
+                <div className="rounded-[1.2rem] border border-white/10 bg-white/5 p-4">
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-sky-200">Test</p>
+                  <p className="mt-2 text-lg font-semibold">2 light runs</p>
+                  <p className="mt-1 text-sm text-slate-300">10 + 10 credits</p>
+                </div>
+                <div className="rounded-[1.2rem] border border-white/10 bg-white/5 p-4">
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-sky-200">Alternative</p>
+                  <p className="mt-2 text-lg font-semibold">1 standard run</p>
+                  <p className="mt-1 text-sm text-slate-300">5 + 18 credits</p>
+                </div>
+              </div>
+            </aside>
           </div>
 
           <div className="mt-5 grid gap-3 md:grid-cols-3 xl:grid-cols-6">
@@ -158,18 +219,40 @@ export default async function PortalPage() {
               </span>
             </div>
 
-            <div className="mt-4 grid gap-3 md:grid-cols-3">
-              {[
-                ["Build + 2 tests", "5 + 10 + 10 = 25", "Generate one workflow from voice, then run two light test executions."],
-                ["Build + 1 standard run", "5 + 18 = 23", "Scope the workflow and run one more realistic, multi-step test."],
-                ["Prove the handoff", "before upgrade", "Use the trial to confirm workflow fit, approvals, and credit behavior with no commitment."],
-              ].map(([title, amount, note]) => (
-                <div key={title} className="rounded-xl border border-slate-200 bg-white px-4 py-4">
-                  <p className="text-sm font-semibold text-slate-950">{title}</p>
-                  <p className="mt-2 text-sm font-medium text-sky-700">{amount}</p>
-                  <p className="mt-2 text-sm leading-relaxed text-slate-600">{note}</p>
-                </div>
-              ))}
+            <div className="mt-4 grid gap-3 xl:grid-cols-[0.95fr_1.05fr]">
+              <div className="grid gap-3">
+                <TrialValueRow
+                  label="Workflow build from voice"
+                  credits="5 credits"
+                  widthClass="w-[20%]"
+                  note="Enough to turn a spoken workflow into a real automation draft with scope and estimated burn."
+                />
+                <TrialValueRow
+                  label="Light test run"
+                  credits="10 credits"
+                  widthClass="w-[40%]"
+                  note="Use one test to validate selectors, approvals, and the expected handoff."
+                />
+                <TrialValueRow
+                  label="Standard run"
+                  credits="18 credits"
+                  widthClass="w-[72%]"
+                  note="A more realistic run with more steps, richer verification, and stronger proof of value."
+                />
+              </div>
+              <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-1">
+                {[
+                  ["Build + 2 tests", "5 + 10 + 10 = 25", "Generate one workflow from voice, then run two light test executions."],
+                  ["Build + 1 standard run", "5 + 18 = 23", "Scope the workflow and run one more realistic, multi-step test."],
+                  ["Prove the handoff", "before upgrade", "Use the trial to confirm workflow fit, approvals, and credit behavior with no commitment."],
+                ].map(([title, amount, note]) => (
+                  <div key={title} className="rounded-xl border border-slate-200 bg-white px-4 py-4">
+                    <p className="text-sm font-semibold text-slate-950">{title}</p>
+                    <p className="mt-2 text-sm font-medium text-sky-700">{amount}</p>
+                    <p className="mt-2 text-sm leading-relaxed text-slate-600">{note}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>

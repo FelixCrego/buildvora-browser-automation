@@ -88,6 +88,31 @@ export default function ClientLoginForm() {
         ))}
       </div>
 
+      <div className="mt-5 rounded-[1.4rem] border border-slate-200 bg-[#0f172a] p-5 text-white">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-sky-200">Why the trial feels real</p>
+            <p className="mt-2 text-base font-semibold">It is designed to get one workflow to proof, not to stall in setup.</p>
+          </div>
+          <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-sky-100">
+            25 credits total
+          </span>
+        </div>
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          {[
+            ["5 credits", "Build the workflow", "Voice prompt to runnable scope."],
+            ["10 credits", "First test run", "Validate selectors and approvals."],
+            ["10 credits", "Second test run", "Confirm the handoff before paying."],
+          ].map(([value, title, detail]) => (
+            <div key={title} className="rounded-xl border border-white/10 bg-white/5 px-4 py-4">
+              <p className="text-sm font-semibold text-sky-200">{value}</p>
+              <p className="mt-2 text-sm font-semibold text-white">{title}</p>
+              <p className="mt-1 text-sm leading-relaxed text-slate-300">{detail}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
       <div className="mt-6 grid gap-4">
         <label className="text-sm text-slate-600">
           Work email

@@ -103,6 +103,31 @@ export default async function BrowserAutomationBillingPage() {
               </div>
             </div>
 
+            <div className="mt-5 rounded-[1.6rem] border border-[#0f172a] bg-[radial-gradient(circle_at_top_left,#1e3a8a_0%,#0f172a_58%,#020617_100%)] p-5 text-white">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-sky-200">Value framing</p>
+                  <h3 className="mt-2 text-xl font-semibold tracking-[-0.03em]">The trial is the first successful proof point</h3>
+                </div>
+                <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-sky-100">
+                  worth $25
+                </span>
+              </div>
+              <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                {[
+                  ["Build", "Turn a spoken workflow into a scoped automation.", "5 credits"],
+                  ["Validate", "Use the remaining credits on realistic test execution.", "20 credits"],
+                  ["Convert", "Upgrade only when the workflow proves itself.", "after proof"],
+                ].map(([title, detail, value]) => (
+                  <div key={title} className="rounded-xl border border-white/10 bg-white/5 px-4 py-4">
+                    <p className="text-sm font-semibold text-white">{title}</p>
+                    <p className="mt-1 text-sm leading-relaxed text-slate-300">{detail}</p>
+                    <p className="mt-3 text-sm font-semibold text-sky-200">{value}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
                 href="/portal/client/login"
@@ -151,6 +176,15 @@ export default async function BrowserAutomationBillingPage() {
                 </div>
               </article>
             ))}
+          </div>
+
+          <div className="mt-5 rounded-xl border border-slate-200 bg-[#f8fafc] p-4">
+            <p className="text-sm font-semibold text-slate-950">How to explain this to customers</p>
+            <div className="mt-2 grid gap-2 text-sm leading-relaxed text-slate-600">
+              <p>1. The free trial gives enough credits to build and meaningfully test one workflow.</p>
+              <p>2. Top-up pricing is $1 per credit, so 25 trial credits represents $25 of real usage value.</p>
+              <p>3. Paid plans simply lower the effective price per credit once the workflow is worth running repeatedly.</p>
+            </div>
           </div>
         </section>
 

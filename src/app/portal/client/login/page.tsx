@@ -65,6 +65,30 @@ export default function ClientPortalLoginPage() {
         </section>
 
         <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="mb-5 rounded-[1.6rem] border border-[#0f172a] bg-[radial-gradient(circle_at_top_left,#1e3a8a_0%,#0f172a_58%,#020617_100%)] p-5 text-white">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-sky-200">Trial outcome</p>
+                <h2 className="mt-2 text-xl font-semibold tracking-[-0.03em]">Enough room to prove one real workflow</h2>
+              </div>
+              <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-sky-100">
+                25 credits live
+              </span>
+            </div>
+            <div className="mt-4 grid gap-3 md:grid-cols-3">
+              {[
+                ["Build once", "Voice input to workflow draft", "5 credits"],
+                ["Test twice", "Two light runs with visible credit estimates", "20 credits"],
+                ["Upgrade after proof", "Move to paid only after the workflow works", "$25 trial value"],
+              ].map(([title, note, value]) => (
+                <div key={title} className="rounded-xl border border-white/10 bg-white/5 px-4 py-4">
+                  <p className="text-sm font-semibold text-white">{title}</p>
+                  <p className="mt-1 text-sm leading-relaxed text-slate-300">{note}</p>
+                  <p className="mt-3 text-sm font-semibold text-sky-200">{value}</p>
+                </div>
+              ))}
+            </div>
+          </div>
           <ClientLoginForm />
         </section>
       </div>

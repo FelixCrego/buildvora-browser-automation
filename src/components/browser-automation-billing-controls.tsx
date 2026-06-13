@@ -302,6 +302,37 @@ export default function BrowserAutomationBillingControls({
         </div>
       ) : null}
 
+      {billingStatus !== "active" ? (
+        <div className="rounded-[1.6rem] border border-[#0f172a] bg-[radial-gradient(circle_at_top_left,#1e3a8a_0%,#0f172a_58%,#020617_100%)] px-5 py-5 text-white">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="max-w-2xl">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-sky-200">What they should feel</p>
+              <p className="mt-2 text-base font-semibold">“I can prove this works before I spend money.”</p>
+              <p className="mt-2 text-sm leading-relaxed text-slate-300">
+                That is the job of the 25-credit trial. It should feel like enough to get to proof, not just enough to look around.
+              </p>
+            </div>
+            <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-sky-100">
+              trial first
+            </span>
+          </div>
+
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
+            {[
+              ["5 credits", "Build", "Voice prompt to automation draft."],
+              ["10 credits", "Test once", "Validate the first browser path."],
+              ["10 credits", "Test again", "Confirm it is repeatable before upgrading."],
+            ].map(([value, title, detail]) => (
+              <div key={title} className="rounded-xl border border-white/10 bg-white/5 px-4 py-4">
+                <p className="text-sm font-semibold text-sky-200">{value}</p>
+                <p className="mt-2 text-sm font-semibold text-white">{title}</p>
+                <p className="mt-1 text-sm leading-relaxed text-slate-300">{detail}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
       <details className="rounded-[1.5rem] border border-slate-200 bg-[#fff8e8] px-5 py-4">
         <summary className="cursor-pointer list-none text-sm font-semibold text-slate-950">
           Internal testing tools
