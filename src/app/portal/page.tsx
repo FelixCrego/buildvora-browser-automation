@@ -2,21 +2,16 @@ import Link from "next/link";
 import ClientLoginForm from "@/components/client-login-form";
 import BrowserAutomationApprovalActions from "@/components/browser-automation-approval-actions";
 import {
-  PortalConnectionOpsPanel,
   PortalRunOpsTable,
-  PortalWorkerOpsTable,
 } from "@/components/browser-automation-portal-ops";
 import BrowserAutomationLaunchSimulator from "@/components/browser-automation-launch-simulator";
 import { StatusPill } from "@/components/browser-automation-console";
 import {
   getAccountApprovals,
-  getAccountConnections,
   getAccountLedger,
   getAccountRuns,
   getAccountWorkflows,
-  getAdminControlPlaneSnapshot,
   getPrimaryWorkspaceAccount,
-  getWorkerNodes,
 } from "@/lib/browserAutomationPortal";
 
 export const dynamic = "force-dynamic";
@@ -111,14 +106,11 @@ export default async function PortalPage() {
   const workflows = await getAccountWorkflows(account.slug);
   const runs = await getAccountRuns(account.slug);
   const approvals = await getAccountApprovals(account.slug);
-  const connections = await getAccountConnections(account.slug);
   const ledger = await getAccountLedger(account.slug);
-  const snapshot = await getAdminControlPlaneSnapshot();
-  const workers = await getWorkerNodes();
   const featuredWorkflow = workflows[0];
   const pendingApprovals = approvals.slice(0, 2);
   const latestLedger = ledger.slice(0, 4);
-  const latestAudit = snapshot.auditEvents.slice(0, 4);
+  const recentRuns = runs.slice(0, 6);
 
   return (
     <main className="min-h-screen bg-[#f4f7fb] text-slate-950">
@@ -170,7 +162,7 @@ export default async function PortalPage() {
               <div className="mt-5 grid gap-3 md:grid-cols-3">
                 <MetricCard label="Credits" value={account.availableCredits.toLocaleString()} note={account.planName} />
                 <MetricCard label="Workflows" value={String(workflows.length)} note="Provisioned and launchable" />
-                <MetricCard label="Approvals" value={String(approvals.length)} note="Waiting on release" />
+                <MetricCard label="Approvals" value={String(approvals.length)} note="Need your release" />
               </div>
 
               <div className="mt-5 grid gap-3">
@@ -190,7 +182,7 @@ export default async function PortalPage() {
             <section className="rounded-[1.8rem] border border-slate-200 bg-white p-6 shadow-[0_18px_55px_rgba(15,23,42,0.05)]">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Featured workflow</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Next run</p>
                   <h2 className="mt-2 text-xl font-semibold tracking-[-0.03em] text-slate-950">{featuredWorkflow?.name}</h2>
                   <p className="mt-2 text-sm leading-relaxed text-slate-600">{featuredWorkflow?.summary}</p>
                 </div>
@@ -244,20 +236,20 @@ export default async function PortalPage() {
             </section>
 
             <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_10px_30px_rgba(15,23,42,0.05)]">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Need attention</p>
-              <h2 className="mt-2 text-xl font-semibold tracking-[-0.03em] text-slate-950">What matters right now</h2>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Trial checkpoint</p>
+              <h2 className="mt-2 text-xl font-semibold tracking-[-0.03em] text-slate-950">Know when it is worth upgrading</h2>
               <div className="mt-4 grid gap-3">
                 <div className="rounded-[1rem] border border-slate-200 bg-[#f8fafc] px-4 py-4">
-                  <p className="text-sm font-semibold text-slate-950">Pending approvals</p>
-                  <p className="mt-1 text-sm text-slate-600">{approvals.length} waiting on release.</p>
+                  <p className="text-sm font-semibold text-slate-950">Workflow draft is clear</p>
+                  <p className="mt-1 text-sm text-slate-600">The scope and estimated credits make sense before launch.</p>
                 </div>
                 <div className="rounded-[1rem] border border-slate-200 bg-[#f8fafc] px-4 py-4">
-                  <p className="text-sm font-semibold text-slate-950">Queue depth</p>
-                  <p className="mt-1 text-sm text-slate-600">{snapshot.totals.queueDepth} runs across the worker fleet.</p>
+                  <p className="text-sm font-semibold text-slate-950">At least one test completed</p>
+                  <p className="mt-1 text-sm text-slate-600">Use the trial to validate the browser path and approval flow.</p>
                 </div>
                 <div className="rounded-[1rem] border border-slate-200 bg-[#f8fafc] px-4 py-4">
-                  <p className="text-sm font-semibold text-slate-950">Disconnected connections</p>
-                  <p className="mt-1 text-sm text-slate-600">{snapshot.totals.disconnectedConnections} execution blockers need review.</p>
+                  <p className="text-sm font-semibold text-slate-950">Repeatability is proven</p>
+                  <p className="mt-1 text-sm text-slate-600">Upgrade when the workflow is reliable enough for production use.</p>
                 </div>
               </div>
             </section>
@@ -270,15 +262,15 @@ export default async function PortalPage() {
           <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <p className="tech text-[10px] uppercase tracking-[0.24em] text-[#0071e3]">Execution</p>
-                <h2 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950">Recent runs and credit movement</h2>
+                <p className="tech text-[10px] uppercase tracking-[0.24em] text-[#0071e3]">Recent activity</p>
+                <h2 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950">Your latest runs and credit usage</h2>
               </div>
               <Link href="/workspace/browser-automation" className="rounded-full border border-slate-200 bg-[#f5f5f7] px-4 py-2 text-sm font-semibold text-slate-950 transition hover:border-[#0071e3]/20 hover:bg-[#f5f9ff]">
                 Workspace detail
               </Link>
             </div>
 
-            <PortalRunOpsTable runs={runs} />
+            <PortalRunOpsTable runs={recentRuns} />
 
             <div className="mt-5 grid gap-4 xl:grid-cols-2">
               <div className="rounded-[1.4rem] border border-slate-200 bg-[#f8fafc] p-4">
@@ -292,7 +284,6 @@ export default async function PortalPage() {
                   ))}
                 </div>
               </div>
-              <PortalConnectionOpsPanel connections={connections} />
             </div>
           </section>
         </div>
@@ -342,32 +333,28 @@ export default async function PortalPage() {
           <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <p className="tech text-[10px] uppercase tracking-[0.24em] text-[#0071e3]">Operations</p>
-                <h2 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950">Workers and backend posture</h2>
+                <p className="tech text-[10px] uppercase tracking-[0.24em] text-[#0071e3]">Workflows</p>
+                <h2 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950">Choose where to continue</h2>
               </div>
-              <Link href="/admin/browser-automation" className="rounded-full border border-slate-200 bg-[#f5f5f7] px-4 py-2 text-sm font-semibold text-slate-950 transition hover:border-[#0071e3]/20 hover:bg-[#f5f9ff]">
-                Full control plane
+              <Link href="/workspace/browser-automation" className="rounded-full border border-slate-200 bg-[#f5f5f7] px-4 py-2 text-sm font-semibold text-slate-950 transition hover:border-[#0071e3]/20 hover:bg-[#f5f9ff]">
+                Full workspace
               </Link>
             </div>
 
-            <div className="mt-5 grid gap-3 md:grid-cols-2">
-              <MetricCard label="Active runs" value={String(snapshot.totals.activeRuns)} note="Running, queued, blocked" />
-              <MetricCard label="Queue depth" value={String(snapshot.totals.queueDepth)} note="Across worker fleet" />
-              <MetricCard label="Accounts" value={String(snapshot.totals.accounts)} note="Provisioned tenants" />
-              <MetricCard label="Revenue" value={`$${snapshot.totals.monthlyRevenue.toLocaleString()}`} note="Live monthly value" />
-            </div>
-
-            <PortalWorkerOpsTable workers={workers} />
-
             <div className="mt-5 grid gap-3">
-              {latestAudit.map((event) => (
-                <div key={event.id} className="rounded-[1.2rem] border border-slate-200 bg-[#f8fafc] px-4 py-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-sm font-semibold text-slate-950">{event.event}</p>
-                    <StatusPill tone={tone(event.severity)}>{event.severity}</StatusPill>
+              {workflows.slice(0, 4).map((workflow) => (
+                <Link
+                  key={workflow.id}
+                  href={`/workspace/browser-automation/workflows/${workflow.slug}`}
+                  className="rounded-[1.2rem] border border-slate-200 bg-[#f8fafc] px-4 py-4 transition hover:border-[#0071e3]/20 hover:bg-[#f5f9ff]"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <p className="text-sm font-semibold text-slate-950">{workflow.name}</p>
+                    <StatusPill tone={tone(workflow.lastRunStatus)}>{workflow.lastRunStatus.replace(/_/g, " ")}</StatusPill>
                   </div>
-                  <p className="mt-2 text-sm leading-relaxed text-slate-600">{event.detail}</p>
-                </div>
+                  <p className="mt-2 text-sm text-slate-600">{workflow.systems.join(" / ")}</p>
+                  <p className="mt-2 text-sm font-medium text-sky-700">{workflow.estimatedCredits}</p>
+                </Link>
               ))}
             </div>
           </section>
