@@ -93,37 +93,40 @@ export default async function PortalPage() {
   const featuredWorkflow = workflows[0];
 
   return (
-    <main className="min-h-screen bg-[#f3f5f9] text-slate-950">
-      <section className="border-b border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f7f9fc_100%)]">
-        <div className="mx-auto max-w-7xl px-6 py-8 md:px-10">
-          <div className="flex flex-wrap items-start justify-between gap-6">
-            <div className="max-w-4xl">
-              <p className="tech text-[10px] uppercase tracking-[0.3em] text-[#0071e3]">BuildVora Browser Automation</p>
-              <h1 className="editorial mt-3 text-[clamp(2.5rem,4.3vw,4.8rem)] leading-[0.93] tracking-[-0.05em] text-slate-950">
-                One place to build, test, approve, and run browser automation
+    <main className="min-h-screen bg-[#f4f7fb] text-slate-950">
+      <section className="border-b border-slate-200 bg-white">
+        <div className="mx-auto max-w-[1320px] px-6 py-5 md:px-8">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="min-w-0">
+              <p className="tech text-[10px] uppercase tracking-[0.24em] text-sky-700">BuildVora Browser Automation</p>
+              <h1 className="mt-2 text-[1.45rem] font-semibold tracking-[-0.03em] text-slate-950 md:text-[1.9rem]">
+                Browser automation workspace
               </h1>
-              <p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-600 md:text-base">
-                This page keeps the client path simple while still exposing the operator controls behind the product. Start a trial, review credits, launch workflows, settle approvals, and step into the backend only when needed.
+              <p className="mt-1 max-w-3xl text-sm leading-relaxed text-slate-500">
+                Launch workflows, monitor credits, review approvals, and step into operations from one software surface.
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                Client + admin
+              </span>
               <Link
                 href="/workspace/browser-automation"
-                className="inline-flex rounded-full bg-[#0071e3] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#0077ed]"
+                className="inline-flex rounded-xl bg-[#0f172a] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#111c33]"
               >
-                Workspace
+                Open workspace
               </Link>
               <Link
                 href="/admin/browser-automation"
-                className="inline-flex rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-950 transition hover:border-[#0071e3]/20 hover:bg-[#f5f9ff]"
+                className="inline-flex rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 transition hover:bg-slate-50"
               >
-                Backend
+                Open admin
               </Link>
             </div>
           </div>
 
-          <div className="mt-6 grid gap-3 md:grid-cols-3 xl:grid-cols-6">
+          <div className="mt-5 grid gap-3 md:grid-cols-3 xl:grid-cols-6">
             <MetricCard label="Credits" value={account.availableCredits.toLocaleString()} note={account.planName} />
             <MetricCard label="Workflows" value={String(workflows.length)} note="Provisioned and launchable" />
             <MetricCard label="Approvals" value={String(approvals.length)} note="Waiting on release" />
@@ -140,8 +143,8 @@ export default async function PortalPage() {
         </div>
       </section>
 
-      <section className="sticky top-0 z-20 border-b border-slate-200 bg-white/90 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl flex-wrap gap-2 px-6 py-3 md:px-10">
+      <section className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur">
+        <div className="mx-auto flex max-w-[1320px] flex-wrap gap-2 px-6 py-3 md:px-8">
           {[
             ["#launch", "Launch"],
             ["#approvals", "Approvals"],
@@ -160,9 +163,9 @@ export default async function PortalPage() {
         </div>
       </section>
 
-      <div className="mx-auto grid max-w-7xl gap-6 px-6 py-8 md:px-10 xl:grid-cols-[1.18fr_0.82fr]">
+      <div className="mx-auto grid max-w-[1320px] gap-6 px-6 py-6 md:px-8 xl:grid-cols-[1.15fr_0.85fr]">
         <div className="grid gap-6">
-          <section id="launch" className="rounded-[1.9rem] border border-slate-200 bg-white p-6 shadow-[0_18px_50px_rgba(15,23,42,0.06)]">
+          <section id="launch" className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <p className="tech text-[10px] uppercase tracking-[0.24em] text-[#0071e3]">Launch desk</p>
@@ -177,10 +180,10 @@ export default async function PortalPage() {
             </div>
 
             <div className="mt-5 grid gap-4 xl:grid-cols-[1.02fr_0.98fr]">
-              <div className="rounded-[1.4rem] border border-slate-200 bg-[#08111c] p-4">
+              <div className="rounded-2xl border border-slate-200 bg-[#0f172a] p-4">
                 {featuredWorkflow ? <BrowserAutomationLaunchSimulator workflowSlug={featuredWorkflow.slug} /> : null}
               </div>
-              <div className="rounded-[1.4rem] border border-slate-200 bg-[#f8fafc] p-4">
+              <div className="rounded-2xl border border-slate-200 bg-[#f8fafc] p-4">
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-sm font-semibold text-slate-950">Workflow matrix</p>
                   <Link href="/workspace/browser-automation" className="text-xs font-semibold uppercase tracking-[0.16em] text-[#0071e3]">
@@ -214,7 +217,7 @@ export default async function PortalPage() {
             </div>
           </section>
 
-          <section id="approvals" className="rounded-[1.9rem] border border-slate-200 bg-white p-6 shadow-[0_18px_50px_rgba(15,23,42,0.06)]">
+          <section id="approvals" className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="tech text-[10px] uppercase tracking-[0.24em] text-[#0071e3]">Approval queue</p>
@@ -263,7 +266,7 @@ export default async function PortalPage() {
             </div>
           </section>
 
-          <section id="runs" className="rounded-[1.9rem] border border-slate-200 bg-white p-6 shadow-[0_18px_50px_rgba(15,23,42,0.06)]">
+          <section id="runs" className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="tech text-[10px] uppercase tracking-[0.24em] text-[#0071e3]">Execution ledger</p>
@@ -294,7 +297,7 @@ export default async function PortalPage() {
         </div>
 
         <div className="grid gap-6">
-          <section id="ops" className="rounded-[1.9rem] border border-slate-200 bg-white p-6 shadow-[0_18px_50px_rgba(15,23,42,0.06)]">
+          <section id="ops" className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="tech text-[10px] uppercase tracking-[0.24em] text-[#0071e3]">Operations backend</p>
@@ -327,7 +330,7 @@ export default async function PortalPage() {
             </div>
           </section>
 
-          <section id="access" className="rounded-[1.9rem] border border-slate-200 bg-white p-6 shadow-[0_18px_50px_rgba(15,23,42,0.06)]">
+          <section id="access" className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <div>
                 <p className="tech text-[10px] uppercase tracking-[0.24em] text-[#0071e3]">Access</p>
               <h2 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950">Client access and next steps</h2>

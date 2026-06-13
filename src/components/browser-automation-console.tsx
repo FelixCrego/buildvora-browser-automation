@@ -22,35 +22,62 @@ export function ConsoleShell({
   children: React.ReactNode;
 }) {
   return (
-    <main className="min-h-screen bg-[#fbfbfd] text-slate-950">
-      <div className="mx-auto max-w-7xl px-6 py-10 md:px-10 md:py-14">
-        <div className="grid gap-8 lg:grid-cols-[280px_1fr]">
-          <aside className="h-fit rounded-[2rem] border border-slate-200 bg-white p-5 shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
-            <p className="tech text-[10px] uppercase tracking-[0.28em] text-[#0071e3]">{navTitle}</p>
-            <div className="mt-4 rounded-[1.6rem] border border-slate-200 bg-[#f5f5f7] p-4">
-              <p className="text-sm font-semibold text-slate-950">{title}</p>
-              <p className="mt-2 text-sm leading-relaxed text-slate-600">{summary}</p>
+    <main className="min-h-screen bg-[#f4f7fb] text-slate-950">
+      <div className="grid min-h-screen lg:grid-cols-[264px_1fr]">
+        <aside className="border-r border-slate-200 bg-[#0f172a] px-5 py-6 text-slate-100">
+          <div className="sticky top-0">
+            <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
+              <p className="tech text-[10px] uppercase tracking-[0.28em] text-sky-300">{navTitle}</p>
+              <p className="mt-3 text-sm font-semibold text-white">{title}</p>
+              <p className="mt-2 text-sm leading-relaxed text-slate-300">{summary}</p>
             </div>
-            <nav className="mt-5 grid gap-3">
+
+            <div className="mt-5 rounded-2xl border border-white/10 bg-white/5 p-2">
+              <div className="flex items-center justify-between px-2 py-2">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Navigation</p>
+                <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[10px] uppercase tracking-[0.18em] text-slate-300">
+                  Live
+                </span>
+              </div>
+              <nav className="mt-1 grid gap-1">
               {navLinks.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="rounded-[1.25rem] border border-slate-200 bg-white px-4 py-3 transition hover:border-[#0071e3]/25 hover:bg-[#f5f9ff]"
+                  className="rounded-xl px-3 py-3 transition hover:bg-white/8"
                 >
-                  <p className="text-sm font-semibold text-slate-950">{link.label}</p>
-                  <p className="mt-1 text-xs leading-relaxed text-slate-500">{link.hint}</p>
+                  <p className="text-sm font-semibold text-white">{link.label}</p>
+                  <p className="mt-1 text-xs leading-relaxed text-slate-400">{link.hint}</p>
                 </Link>
               ))}
-            </nav>
-          </aside>
-          <div>
-            <div className="rounded-[2.4rem] border border-slate-200 bg-white p-6 shadow-[0_20px_60px_rgba(15,23,42,0.08)] md:p-8">
-              <p className="tech text-[10px] uppercase tracking-[0.3em] text-[#0071e3]">{eyebrow}</p>
-              <h1 className="editorial mt-3 text-4xl tracking-[-0.04em] text-slate-950 md:text-6xl">{title}</h1>
-              <p className="mt-4 max-w-3xl text-base leading-relaxed text-slate-600 md:text-lg">{summary}</p>
+              </nav>
             </div>
-            <div className="mt-6">{children}</div>
+          </div>
+        </aside>
+
+        <div className="min-w-0">
+          <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/92 backdrop-blur">
+            <div className="flex items-center justify-between gap-4 px-6 py-4 md:px-8">
+              <div className="min-w-0">
+                <p className="tech text-[10px] uppercase tracking-[0.24em] text-sky-700">{eyebrow}</p>
+                <h1 className="mt-1 truncate text-[1.35rem] font-semibold tracking-[-0.03em] text-slate-950 md:text-2xl">
+                  {title}
+                </h1>
+                <p className="mt-1 max-w-3xl text-sm leading-relaxed text-slate-500">{summary}</p>
+              </div>
+              <div className="hidden items-center gap-2 lg:flex">
+                <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                  Credits-based
+                </span>
+                <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700">
+                  Protected runs
+                </span>
+              </div>
+            </div>
+          </header>
+
+          <div className="px-6 py-6 md:px-8 md:py-8">
+            <div className="mx-auto max-w-[1320px]">{children}</div>
           </div>
         </div>
       </div>
@@ -68,9 +95,9 @@ export function StatCard({
   detail: string;
 }) {
   return (
-    <article className="rounded-[1.7rem] border border-slate-200 bg-white p-5 shadow-[0_14px_45px_rgba(15,23,42,0.06)]">
-      <p className="tech text-[10px] uppercase tracking-[0.24em] text-[#0071e3]">{label}</p>
-      <p className="mt-3 text-3xl font-semibold text-slate-950">{value}</p>
+    <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">{label}</p>
+      <p className="mt-2 text-[1.9rem] font-semibold tracking-[-0.03em] text-slate-950">{value}</p>
       <p className="mt-2 text-sm leading-relaxed text-slate-500">{detail}</p>
     </article>
   );
@@ -86,9 +113,9 @@ export function Panel({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_18px_55px_rgba(15,23,42,0.06)]">
-      {kicker ? <p className="tech text-[10px] uppercase tracking-[0.24em] text-[#0071e3]">{kicker}</p> : null}
-      <h2 className="mt-2 text-2xl font-semibold text-slate-950">{title}</h2>
+    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      {kicker ? <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">{kicker}</p> : null}
+      <h2 className="mt-2 text-xl font-semibold tracking-[-0.02em] text-slate-950">{title}</h2>
       <div className="mt-5">{children}</div>
     </section>
   );
@@ -113,7 +140,7 @@ export function StatusPill({
             : "border-blue-200 bg-[#f1f7ff] text-[#0071e3]";
 
   return (
-    <span className={`inline-flex rounded-full border px-3 py-1 text-[10px] uppercase tracking-[0.22em] ${toneClassName}`}>
+    <span className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${toneClassName}`}>
       {children}
     </span>
   );
