@@ -223,6 +223,11 @@ function nowIso() {
   return new Date().toISOString();
 }
 
+function readEnv(name: string) {
+  const value = process.env[name];
+  return typeof value === "string" ? value.trim() : "";
+}
+
 function slugify(value: string) {
   return value
     .toLowerCase()
@@ -277,10 +282,9 @@ function buildSeedState(): BrowserAutomationState {
 }
 
 function getManagedStateDatabaseUrl() {
-  return process.env.BROWSER_AUTOMATION_DATABASE_URL
-    ?? process.env.POSTGRES_URL
-    ?? process.env.DATABASE_URL
-    ?? "";
+  return readEnv("BROWSER_AUTOMATION_DATABASE_URL")
+    || readEnv("POSTGRES_URL")
+    || readEnv("DATABASE_URL");
 }
 
 function shouldUseManagedStateStore() {
@@ -389,6 +393,10 @@ async function writeState(state: BrowserAutomationState) {
 
 export async function getLaunchDiagnostics() {
   const storageMode = shouldUseManagedStateStore() ? "postgres" : "local-fallback";
+  const playwrightRuntimeEnabled = readEnv("BROWSER_AUTOMATION_RUNTIME") === "playwright";
+  const openAiConfigured = Boolean(readEnv("OPENAI_API_KEY"));
+  const paypalConfigured = isPayPalConfigured();
+  const managedDatabaseConfigured = Boolean(getManagedStateDatabaseUrl());
   let databaseStatus: "ready" | "error" = "ready";
   let databaseMessage = "State store reachable.";
   let stateSnapshot: {
@@ -411,8 +419,41 @@ export async function getLaunchDiagnostics() {
     databaseMessage = error instanceof Error ? error.message : "Unknown state store error.";
   }
 
+  const blockers: string[] = [];
+  const actions: string[] = [];
+
+  if (!managedDatabaseConfigured) {
+    blockers.push("Managed Postgres is not configured.");
+    actions.push("Set BROWSER_AUTOMATION_DATABASE_URL or DATABASE_URL in Vercel.");
+  }
+
+  if (!paypalConfigured) {
+    blockers.push("PayPal live credentials are missing.");
+    actions.push("Set PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, PAYPAL_WEBHOOK_ID, and live plan IDs.");
+  }
+
+  if (!openAiConfigured) {
+    blockers.push("OPENAI_API_KEY is missing.");
+    actions.push("Add OPENAI_API_KEY and, optionally, BROWSER_AUTOMATION_MODEL to Vercel.");
+  }
+
+  if (!playwrightRuntimeEnabled) {
+    blockers.push("Browser runtime is still set to simulated mode.");
+    actions.push("Set BROWSER_AUTOMATION_RUNTIME=playwright in Vercel to enable live browser execution.");
+  }
+
+  if (databaseStatus !== "ready") {
+    blockers.push("Managed state store is not reachable.");
+    actions.push("Check Neon connectivity and the configured Postgres URL.");
+  }
+
+  const launchReady = blockers.length === 0;
+
   return {
     checkedAt: nowIso(),
+    launchReady,
+    blockers,
+    actions,
     storageMode,
     database: {
       status: databaseStatus,
@@ -425,14 +466,15 @@ export async function getLaunchDiagnostics() {
     },
     billing: {
       provider: getBillingProviderLabel(),
-      paypalConfigured: isPayPalConfigured(),
+      paypalConfigured,
       paypalEnvironment: getPayPalEnvironment(),
       paypalClientIdPresent: Boolean(getPublicPayPalClientId()),
     },
     runtime: {
-      browserRuntime: process.env.BROWSER_AUTOMATION_RUNTIME === "playwright" ? "playwright" : "simulated",
-      openAiConfigured: Boolean(process.env.OPENAI_API_KEY),
-      workerMode: process.env.BROWSER_AUTOMATION_RUNTIME === "playwright" ? "live-browser" : "simulated-browser",
+      browserRuntime: playwrightRuntimeEnabled ? "playwright" : "simulated",
+      openAiConfigured,
+      workerMode: playwrightRuntimeEnabled ? "live-browser" : "simulated-browser",
+      model: readEnv("BROWSER_AUTOMATION_MODEL") || "gpt-5.5",
     },
   };
 }
@@ -761,7 +803,7 @@ function createSimulatedBrowserAdapter() {
 }
 
 async function createRuntimeBrowserAdapter() {
-  if (process.env.BROWSER_AUTOMATION_RUNTIME !== "playwright") {
+  if (readEnv("BROWSER_AUTOMATION_RUNTIME") !== "playwright") {
     return {
       adapter: createSimulatedBrowserAdapter(),
       dispose: async () => undefined,

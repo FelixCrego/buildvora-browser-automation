@@ -5,7 +5,7 @@ import { getLaunchDiagnostics } from "@/lib/browserAutomationPortal";
 export const dynamic = "force-dynamic";
 
 function tone(status: string) {
-  if (status === "ready" || status === "configured") return "green" as const;
+  if (status === "ready" || status === "configured" || status === "launch-ready") return "green" as const;
   if (status === "warning" || status === "missing") return "amber" as const;
   if (status === "error") return "red" as const;
   return "slate" as const;
@@ -18,6 +18,19 @@ export default async function BrowserAutomationDiagnosticsPage() {
     <div className="grid gap-6">
       <Panel title="Launch diagnostics" kicker="Production health">
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div className="rounded-[1.4rem] border border-slate-200 bg-white p-5">
+            <p className="text-[10px] uppercase tracking-[0.18em] text-slate-500">Launch status</p>
+            <div className="mt-2">
+              <StatusPill tone={tone(diagnostics.launchReady ? "launch-ready" : "warning")}>
+                {diagnostics.launchReady ? "launch ready" : "needs setup"}
+              </StatusPill>
+            </div>
+            <p className="mt-2 text-sm text-slate-600">
+              {diagnostics.launchReady
+                ? "Production execution path is configured."
+                : "One or more blockers still prevent a true production launch."}
+            </p>
+          </div>
           <div className="rounded-[1.4rem] border border-slate-200 bg-white p-5">
             <p className="text-[10px] uppercase tracking-[0.18em] text-slate-500">Storage mode</p>
             <p className="mt-2 text-lg font-semibold text-slate-950">{diagnostics.storageMode}</p>
@@ -38,7 +51,7 @@ export default async function BrowserAutomationDiagnosticsPage() {
           <div className="rounded-[1.4rem] border border-slate-200 bg-white p-5">
             <p className="text-[10px] uppercase tracking-[0.18em] text-slate-500">Runtime</p>
             <p className="mt-2 text-lg font-semibold text-slate-950">{diagnostics.runtime.browserRuntime}</p>
-            <p className="mt-1 text-sm text-slate-600">{diagnostics.runtime.workerMode}</p>
+            <p className="mt-1 text-sm text-slate-600">{diagnostics.runtime.workerMode} · {diagnostics.runtime.model}</p>
           </div>
         </div>
       </Panel>
@@ -83,6 +96,34 @@ export default async function BrowserAutomationDiagnosticsPage() {
                 /api/browser-automation/health
               </Link>
             </p>
+          </div>
+        </Panel>
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
+        <Panel title="Launch blockers" kicker="What still has to be true">
+          <div className="grid gap-3">
+            {diagnostics.blockers.length === 0 ? (
+              <div className="rounded-[1.2rem] border border-emerald-200 bg-emerald-50 px-4 py-4 text-sm text-emerald-800">
+                No launch blockers detected.
+              </div>
+            ) : (
+              diagnostics.blockers.map((blocker) => (
+                <div key={blocker} className="rounded-[1.2rem] border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900">
+                  {blocker}
+                </div>
+              ))
+            )}
+          </div>
+        </Panel>
+
+        <Panel title="Finish setup" kicker="Exact next actions">
+          <div className="grid gap-3">
+            {diagnostics.actions.map((action) => (
+              <div key={action} className="rounded-[1.2rem] border border-slate-200 bg-white px-4 py-4 text-sm text-slate-600">
+                {action}
+              </div>
+            ))}
           </div>
         </Panel>
       </div>

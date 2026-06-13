@@ -5,13 +5,12 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   const diagnostics = await getLaunchDiagnostics();
-  const status = diagnostics.database.status === "ready" ? 200 : 503;
+  const status = diagnostics.launchReady ? 200 : 503;
   return NextResponse.json(
     {
-      ok: diagnostics.database.status === "ready",
+      ok: diagnostics.launchReady,
       diagnostics,
     },
     { status },
   );
 }
-
