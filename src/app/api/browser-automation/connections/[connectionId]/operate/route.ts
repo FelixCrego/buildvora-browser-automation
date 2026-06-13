@@ -18,7 +18,7 @@ export async function POST(
       return NextResponse.json({ ok: false, message: "action is required." }, { status: 400 });
     }
 
-    const result = operateConnection({
+    const result = await operateConnection({
       connectionId,
       action: payload.action,
       actor: payload.actor,

@@ -15,7 +15,7 @@ export default async function BrowserAutomationWorkflowPage({
   params: Promise<{ workflowSlug: string }>;
 }) {
   const { workflowSlug } = await params;
-  const workflow = getWorkflowBySlug(workflowSlug);
+  const workflow = await getWorkflowBySlug(workflowSlug);
 
   if (!workflow) {
     notFound();

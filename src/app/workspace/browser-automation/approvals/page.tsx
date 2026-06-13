@@ -5,8 +5,8 @@ import { getAccountApprovals, resolveWorkspaceAccount } from "@/lib/browserAutom
 
 export default async function BrowserAutomationApprovalsPage() {
   const session = await getWorkspaceSession();
-  const account = resolveWorkspaceAccount(session);
-  const approvals = getAccountApprovals(account.slug);
+  const account = await resolveWorkspaceAccount(session);
+  const approvals = await getAccountApprovals(account.slug);
 
   return (
     <div className="grid gap-6">

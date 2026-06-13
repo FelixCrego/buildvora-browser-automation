@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import type { NextResponse } from "next/server";
-import { getBrowserAutomationAccounts } from "@/lib/browserAutomationPortal";
+import { getAccountBySlug } from "@/lib/browserAutomationPortal";
 import type { BrowserAutomationAccount, PlanType } from "@/lib/browserAutomationSeed";
 
 export type BillingStatus = "inactive" | "trialing" | "active" | "past_due";
@@ -52,14 +52,13 @@ function normalizeWorkspaceCode(workspaceCode: string) {
 }
 
 function resolveAccountSlug(workspaceCode: string) {
-  const accounts = getBrowserAutomationAccounts();
   const normalizedCode = normalizeWorkspaceCode(workspaceCode);
 
   if (normalizedCode.startsWith("NSC")) {
-    return accounts.find((account) => account.slug === "northshore-clinics")?.slug ?? accounts[0]?.slug ?? "harbor-legal-group";
+    return "northshore-clinics";
   }
 
-  return accounts.find((account) => account.slug === "harbor-legal-group")?.slug ?? accounts[0]?.slug ?? "harbor-legal-group";
+  return "harbor-legal-group";
 }
 
 export function buildWorkspaceSession(input: {
@@ -118,7 +117,7 @@ export async function getWorkspaceSession() {
     return null;
   }
 
-  const account = getBrowserAutomationAccounts().find((item) => item.slug === accountSlug);
+  const account = await getAccountBySlug(accountSlug);
   const accountBillingStatus = account?.billingStatus;
   const accountPlan = account?.planType;
   const accountProvider = account?.planType === "trial" ? "trial" : undefined;

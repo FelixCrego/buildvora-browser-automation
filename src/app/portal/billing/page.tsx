@@ -14,7 +14,7 @@ import { resolveWorkspaceAccount } from "@/lib/browserAutomationPortal";
 
 export default async function BrowserAutomationBillingPage() {
   const session = await getWorkspaceSession();
-  const account = resolveWorkspaceAccount(session);
+  const account = await resolveWorkspaceAccount(session);
   const pricingCards = getPricingCards();
   const checkoutPlans = BILLING_PLANS;
 

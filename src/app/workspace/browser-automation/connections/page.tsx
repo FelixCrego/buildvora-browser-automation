@@ -11,8 +11,8 @@ function statusTone(status: string) {
 
 export default async function BrowserAutomationConnectionsPage() {
   const session = await getWorkspaceSession();
-  const account = resolveWorkspaceAccount(session);
-  const connections = getAccountConnections(account.slug);
+  const account = await resolveWorkspaceAccount(session);
+  const connections = await getAccountConnections(account.slug);
 
   return (
     <div className="grid gap-6">

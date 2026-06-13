@@ -25,7 +25,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: false, message: "Enter a valid workspace code." }, { status: 400 });
     }
 
-    const account = ensureWorkspaceAccount({ email, workspaceCode });
+    const account = await ensureWorkspaceAccount({ email, workspaceCode });
     const session = buildWorkspaceSession({
       email,
       workspaceCode,

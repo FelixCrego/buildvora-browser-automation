@@ -13,7 +13,7 @@ export async function GET(
   { params }: { params: Promise<{ accountSlug: string }> },
 ) {
   const { accountSlug } = await params;
-  const account = getAccountBySlug(accountSlug);
+  const account = await getAccountBySlug(accountSlug);
 
   if (!account) {
     return NextResponse.json({ ok: false, message: "Account not found." }, { status: 404 });
@@ -22,10 +22,10 @@ export async function GET(
   return NextResponse.json({
     ok: true,
     account,
-    workflows: getAccountWorkflows(accountSlug),
-    runs: getAccountRuns(accountSlug),
-    approvals: getAccountApprovals(accountSlug),
-    connections: getAccountConnections(accountSlug),
-    ledger: getAccountLedger(accountSlug),
+    workflows: await getAccountWorkflows(accountSlug),
+    runs: await getAccountRuns(accountSlug),
+    approvals: await getAccountApprovals(accountSlug),
+    connections: await getAccountConnections(accountSlug),
+    ledger: await getAccountLedger(accountSlug),
   });
 }

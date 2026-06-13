@@ -7,8 +7,8 @@ function tone(severity: string) {
   return "red" as const;
 }
 
-export default function AdminAuditPage() {
-  const events = getAuditEvents();
+export default async function AdminAuditPage() {
+  const events = await getAuditEvents();
 
   return (
     <Panel title="Audit log" kicker="Operator and system history">

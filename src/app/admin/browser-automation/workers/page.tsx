@@ -7,8 +7,8 @@ function tone(status: string) {
   return "red" as const;
 }
 
-export default function AdminWorkersPage() {
-  const workers = getWorkerNodes();
+export default async function AdminWorkersPage() {
+  const workers = await getWorkerNodes();
 
   return (
     <Panel title="Worker fleet" kicker="Runtime controls">

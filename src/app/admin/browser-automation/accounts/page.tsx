@@ -2,8 +2,8 @@ import Link from "next/link";
 import { Panel, StatusPill } from "@/components/browser-automation-console";
 import { getBrowserAutomationAccounts } from "@/lib/browserAutomationPortal";
 
-export default function AdminAccountsPage() {
-  const accounts = getBrowserAutomationAccounts();
+export default async function AdminAccountsPage() {
+  const accounts = await getBrowserAutomationAccounts();
 
   return (
     <Panel title="Accounts" kicker="Tenant controls">

@@ -1,10 +1,10 @@
 import { Panel, StatCard, StatusPill } from "@/components/browser-automation-console";
 import { getAdminEconomicsSnapshot, getBillingAuditEvents, getCreditLedgerEntries } from "@/lib/browserAutomationPortal";
 
-export default function AdminCreditsPage() {
-  const entries = getCreditLedgerEntries();
-  const billingEvents = getBillingAuditEvents();
-  const economics = getAdminEconomicsSnapshot();
+export default async function AdminCreditsPage() {
+  const entries = await getCreditLedgerEntries();
+  const billingEvents = await getBillingAuditEvents();
+  const economics = await getAdminEconomicsSnapshot();
 
   return (
     <div className="grid gap-6">

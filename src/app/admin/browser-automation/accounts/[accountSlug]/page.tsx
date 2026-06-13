@@ -23,17 +23,17 @@ export default async function BrowserAutomationAdminAccountPage({
   params: Promise<{ accountSlug: string }>;
 }) {
   const { accountSlug } = await params;
-  const account = getAccountBySlug(accountSlug);
+  const account = await getAccountBySlug(accountSlug);
 
   if (!account) {
     notFound();
   }
 
-  const workflows = getAccountWorkflows(account.slug);
-  const runs = getAccountRuns(account.slug);
-  const approvals = getAccountApprovals(account.slug);
-  const connections = getAccountConnections(account.slug);
-  const ledger = getAccountLedger(account.slug);
+  const workflows = await getAccountWorkflows(account.slug);
+  const runs = await getAccountRuns(account.slug);
+  const approvals = await getAccountApprovals(account.slug);
+  const connections = await getAccountConnections(account.slug);
+  const ledger = await getAccountLedger(account.slug);
 
   return (
     <div className="grid gap-6">

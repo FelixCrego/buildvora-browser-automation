@@ -14,10 +14,10 @@ function tone(status: string) {
   return "slate" as const;
 }
 
-export default function BrowserAutomationAdminPage() {
-  const snapshot = getAdminControlPlaneSnapshot();
-  const economics = getAdminEconomicsSnapshot();
-  const recentRuns = getBrowserAutomationRuns().slice(0, 4);
+export default async function BrowserAutomationAdminPage() {
+  const snapshot = await getAdminControlPlaneSnapshot();
+  const economics = await getAdminEconomicsSnapshot();
+  const recentRuns = (await getBrowserAutomationRuns()).slice(0, 4);
 
   return (
     <div className="grid gap-6">

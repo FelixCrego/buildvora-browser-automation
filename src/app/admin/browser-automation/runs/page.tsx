@@ -9,8 +9,8 @@ function tone(status: string) {
   return "slate" as const;
 }
 
-export default function AdminRunsPage() {
-  const runs = getBrowserAutomationRuns();
+export default async function AdminRunsPage() {
+  const runs = await getBrowserAutomationRuns();
 
   return (
     <Panel title="Run operations" kicker="Queue and execution controls">

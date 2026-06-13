@@ -29,7 +29,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: false, message: "Sign in before building an automation." }, { status: 401 });
     }
 
-    const persistedAccount = getAccountBySlug(session.accountSlug);
+    const persistedAccount = await getAccountBySlug(session.accountSlug);
     const availableCredits = persistedAccount?.availableCredits ?? session.availableCredits ?? session.trialCreditsRemaining ?? 0;
     if (availableCredits < 5) {
       return NextResponse.json(
@@ -102,7 +102,7 @@ export async function POST(request: Request) {
     });
 
     if (persistedAccount) {
-      const updatedAccount = spendCreditsFromAccount({
+      const updatedAccount = await spendCreditsFromAccount({
         accountSlug: session.accountSlug,
         amount: 5,
         note: `Voice builder automation scope for ${company}`,

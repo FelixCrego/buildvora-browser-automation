@@ -3,6 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
+import postgres, { type Sql } from "postgres";
 import {
   BrowserAutomationHarness,
   createPlaywrightAdapter,
@@ -282,7 +283,33 @@ function buildSeedState(): BrowserAutomationState {
   };
 }
 
-function withDatabase<T>(
+function getManagedStateDatabaseUrl() {
+  return process.env.BROWSER_AUTOMATION_DATABASE_URL
+    ?? process.env.POSTGRES_URL
+    ?? process.env.DATABASE_URL
+    ?? "";
+}
+
+function shouldUseManagedStateStore() {
+  return Boolean(getManagedStateDatabaseUrl());
+}
+
+let postgresClient: Sql | null = null;
+
+function getPostgresClient() {
+  if (!postgresClient) {
+    postgresClient = postgres(getManagedStateDatabaseUrl(), {
+      max: 1,
+      prepare: false,
+      idle_timeout: 5,
+      connect_timeout: 10,
+    });
+  }
+
+  return postgresClient;
+}
+
+function withLocalDatabase<T>(
   callback: (database: DatabaseSync) => T,
   options: { initialize?: boolean } = {},
 ) {
@@ -311,13 +338,13 @@ function withDatabase<T>(
   }
 }
 
-function readState(): BrowserAutomationState {
+function readLocalState(): BrowserAutomationState {
   const databasePath = resolveStateFilePath();
   if (!fs.existsSync(databasePath)) {
     return buildSeedState();
   }
 
-  return withDatabase((database) => {
+  return withLocalDatabase((database) => {
     const row = database
       .prepare("SELECT json FROM state_store WHERE key = ?")
       .get("browser-automation-state") as { json: string } | undefined;
@@ -330,8 +357,8 @@ function readState(): BrowserAutomationState {
   });
 }
 
-function writeState(state: BrowserAutomationState) {
-  withDatabase((database) => {
+function writeLocalState(state: BrowserAutomationState) {
+  withLocalDatabase((database) => {
     database
       .prepare(`
         INSERT INTO state_store (key, json, updated_at)
@@ -340,6 +367,64 @@ function writeState(state: BrowserAutomationState) {
       `)
       .run("browser-automation-state", JSON.stringify(state), nowIso());
   }, { initialize: true });
+}
+
+async function ensureManagedStateTable() {
+  const sql = getPostgresClient();
+  await sql`
+    CREATE TABLE IF NOT EXISTS browser_automation_state_store (
+      key TEXT PRIMARY KEY,
+      json TEXT NOT NULL,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
+}
+
+async function readManagedState(): Promise<BrowserAutomationState> {
+  await ensureManagedStateTable();
+  const sql = getPostgresClient();
+  const rows = await sql<{ json: string }[]>`
+    SELECT json
+    FROM browser_automation_state_store
+    WHERE key = 'browser-automation-state'
+    LIMIT 1
+  `;
+
+  if (rows.length === 0) {
+    const seed = buildSeedState();
+    await writeManagedState(seed);
+    return seed;
+  }
+
+  return JSON.parse(rows[0].json) as BrowserAutomationState;
+}
+
+async function writeManagedState(state: BrowserAutomationState) {
+  await ensureManagedStateTable();
+  const sql = getPostgresClient();
+  await sql`
+    INSERT INTO browser_automation_state_store (key, json, updated_at)
+    VALUES ('browser-automation-state', ${JSON.stringify(state)}, NOW())
+    ON CONFLICT (key) DO UPDATE
+    SET json = EXCLUDED.json, updated_at = EXCLUDED.updated_at
+  `;
+}
+
+async function readState(): Promise<BrowserAutomationState> {
+  if (shouldUseManagedStateStore()) {
+    return readManagedState();
+  }
+
+  return readLocalState();
+}
+
+async function writeState(state: BrowserAutomationState) {
+  if (shouldUseManagedStateStore()) {
+    await writeManagedState(state);
+    return;
+  }
+
+  writeLocalState(state);
 }
 
 function getBalanceFromLedger(state: BrowserAutomationState, accountSlug: string) {
@@ -692,12 +777,12 @@ async function createRuntimeBrowserAdapter() {
 
 function createPersistentCreditLedger() {
   return {
-    getBalance(accountId: string) {
-      const state = readState();
+    async getBalance(accountId: string) {
+      const state = await readState();
       return getBalanceFromLedger(state, accountId);
     },
-    reserve(accountId: string, amount: number, metadata: Record<string, unknown> = {}) {
-      const state = readState();
+    async reserve(accountId: string, amount: number, metadata: Record<string, unknown> = {}) {
+      const state = await readState();
       const balance = getBalanceFromLedger(state, accountId);
 
       if (balance < amount) {
@@ -726,18 +811,18 @@ function createPersistentCreditLedger() {
         source: "run",
       });
       syncAccountDerivedFields(state);
-      writeState(state);
+      await writeState(state);
       return { holdId, accountId, held: amount, balanceAfter: nextBalance, metadata };
     },
     hold(accountId: string, amount: number, metadata: Record<string, unknown> = {}) {
       return this.reserve(accountId, amount, metadata);
     },
-    getHold(holdId: string) {
-      const state = readState();
+    async getHold(holdId: string) {
+      const state = await readState();
       return state.creditHolds.find((hold) => hold.holdId === holdId) ?? null;
     },
-    capture(holdId: string, actualBurn: number, metadata: Record<string, unknown> = {}) {
-      const state = readState();
+    async capture(holdId: string, actualBurn: number, metadata: Record<string, unknown> = {}) {
+      const state = await readState();
       const hold = state.creditHolds.find((entry) => entry.holdId === holdId);
 
       if (!hold || hold.status !== "held") {
@@ -778,7 +863,7 @@ function createPersistentCreditLedger() {
       hold.released = releaseAmount;
       hold.balanceAfter = balance;
       syncAccountDerivedFields(state);
-      writeState(state);
+      await writeState(state);
 
       return {
         holdId,
@@ -792,22 +877,22 @@ function createPersistentCreditLedger() {
 
 function createPersistentRunStore() {
   return {
-    create(run: StoredRuntimeRun) {
-      const state = readState();
+    async create(run: StoredRuntimeRun) {
+      const state = await readState();
       state.runtimeRuns = state.runtimeRuns.filter((current) => current.runId !== run.runId);
       state.runtimeRuns.unshift(run);
       syncPublicRunRecord(state, run);
       normalizeWorkerMetrics(state);
-      writeState(state);
+      await writeState(state);
       return deepClone(run);
     },
-    get(runId: string) {
-      const state = readState();
+    async get(runId: string) {
+      const state = await readState();
       const run = state.runtimeRuns.find((current) => current.runId === runId);
       return run ? deepClone(run) : null;
     },
-    update(runId: string, updates: Partial<StoredRuntimeRun>) {
-      const state = readState();
+    async update(runId: string, updates: Partial<StoredRuntimeRun>) {
+      const state = await readState();
       const index = state.runtimeRuns.findIndex((current) => current.runId === runId);
       if (index < 0) {
         throw new Error(`Unknown run ${runId}.`);
@@ -820,7 +905,7 @@ function createPersistentRunStore() {
       state.runtimeRuns[index] = next;
       syncPublicRunRecord(state, next);
       normalizeWorkerMetrics(state);
-      writeState(state);
+      await writeState(state);
       return deepClone(next);
     },
   };
@@ -835,7 +920,7 @@ function createApprovalService(accountSlug: string, workflowSlug: string, actor:
       runId: string;
       step: { id: string; title: string };
     }) {
-      const state = readState();
+      const state = await readState();
       const existing = state.approvals.find(
         (approval) => approval.runId === runId && approval.stepLabel === step.title,
       );
@@ -878,7 +963,7 @@ function createApprovalService(accountSlug: string, workflowSlug: string, actor:
           detail: `Approval requested for ${step.title}.`,
         });
         syncAccountDerivedFields(state);
-        writeState(state);
+        await writeState(state);
       }
 
       return {
@@ -895,7 +980,7 @@ async function runHarnessForWorkflow(input: {
   targetCount: number;
   verificationMode: "standard" | "heavy";
 }) {
-  const state = readState();
+  const state = await readState();
   const workflow = state.workflows.find((item) => item.slug === input.workflowSlug);
   if (!workflow) {
     throw new Error("Workflow not found.");
@@ -923,7 +1008,7 @@ async function runHarnessForWorkflow(input: {
       runId: `run_${randomUUID().slice(0, 8)}`,
     });
 
-    const nextState = readState();
+    const nextState = await readState();
     const runtimeRun = nextState.runtimeRuns.find((item) => item.runId === result.runId);
     if (runtimeRun) {
       runtimeRun.workflowSlug = input.workflowSlug;
@@ -938,7 +1023,7 @@ async function runHarnessForWorkflow(input: {
         severity: severityForStatus(result.status),
         detail: `${workflow.name} ${result.status}.`,
       });
-      writeState(nextState);
+      await writeState(nextState);
     }
 
     return { result, workflow };
@@ -948,7 +1033,7 @@ async function runHarnessForWorkflow(input: {
 }
 
 export async function launchWorkflowRun(payload: LaunchPayload) {
-  const preview = estimateRunLaunch(payload);
+  const preview = await estimateRunLaunch(payload);
   if (!preview) {
     throw new Error("Workflow not found.");
   }
@@ -965,12 +1050,12 @@ export async function launchWorkflowRun(payload: LaunchPayload) {
 
   return {
     launch: preview,
-    run: getRunById(run.result.runId),
+    run: await getRunById(run.result.runId),
   };
 }
 
 export async function resolveWorkflowApproval(payload: ApprovalDecisionPayload) {
-  const state = readState();
+  const state = await readState();
   const approval = state.approvals.find((item) => item.id === payload.approvalId);
   if (!approval) {
     throw new Error("Approval not found.");
@@ -987,7 +1072,7 @@ export async function resolveWorkflowApproval(payload: ApprovalDecisionPayload) 
     detail: `${approval.stepLabel} ${payload.approved ? "approved" : "rejected"}.`,
   });
   syncAccountDerivedFields(state);
-  writeState(state);
+  await writeState(state);
 
   const runtimeRun = state.runtimeRuns.find((item) => item.runId === approval.runId);
   if (!runtimeRun) {
@@ -1019,7 +1104,7 @@ export async function resolveWorkflowApproval(payload: ApprovalDecisionPayload) 
 }
 
 export async function operateRun(payload: RunActionPayload) {
-  const state = readState();
+  const state = await readState();
   const run = state.runs.find((item) => item.id === payload.runId);
   if (!run) {
     throw new Error("Run not found.");
@@ -1069,7 +1154,7 @@ export async function operateRun(payload: RunActionPayload) {
     severity: payload.action === "cancel" ? "critical" : "warning",
     detail: `${payload.action} applied to ${run.id}.`,
   });
-  writeState(state);
+  await writeState(state);
 
   if (payload.action === "retry") {
     const workflow = state.workflows.find((item) => item.slug === run.workflowSlug);
@@ -1086,8 +1171,8 @@ export async function operateRun(payload: RunActionPayload) {
   return getRunById(payload.runId);
 }
 
-export function operateConnection(payload: ConnectionActionPayload) {
-  const state = readState();
+export async function operateConnection(payload: ConnectionActionPayload) {
+  const state = await readState();
   const connection = state.connections.find((item) => item.id === payload.connectionId);
   if (!connection) {
     throw new Error("Connection not found.");
@@ -1109,12 +1194,12 @@ export function operateConnection(payload: ConnectionActionPayload) {
     severity: payload.action === "rotate" ? "warning" : "info",
     detail: `${payload.action} applied to ${connection.provider}.`,
   });
-  writeState(state);
+  await writeState(state);
   return connection;
 }
 
-export function operateWorker(payload: WorkerActionPayload) {
-  const state = readState();
+export async function operateWorker(payload: WorkerActionPayload) {
+  const state = await readState();
   const worker = state.workers.find((item) => item.id === payload.workerId);
   if (!worker) {
     throw new Error("Worker not found.");
@@ -1135,7 +1220,7 @@ export function operateWorker(payload: WorkerActionPayload) {
     severity: payload.action === "drain" ? "warning" : "info",
     detail: `${payload.action} applied to ${worker.label}.`,
   });
-  writeState(state);
+  await writeState(state);
   return worker;
 }
 
@@ -1175,72 +1260,72 @@ function buildControlPlaneSnapshot(state: BrowserAutomationState) {
   };
 }
 
-export function getBrowserAutomationAccounts() {
-  const state = readState();
+export async function getBrowserAutomationAccounts() {
+  const state = await readState();
   syncAccountDerivedFields(state);
   return state.accounts;
 }
 
-export function getBrowserAutomationWorkflows() {
-  return readState().workflows;
+export async function getBrowserAutomationWorkflows() {
+  return (await readState()).workflows;
 }
 
-export function getWorkflowVersions() {
-  return readState().workflowVersions;
+export async function getWorkflowVersions() {
+  return (await readState()).workflowVersions;
 }
 
-export function getBrowserAutomationRuns() {
-  return readState().runs;
+export async function getBrowserAutomationRuns() {
+  return (await readState()).runs;
 }
 
-export function getBrowserAutomationApprovals() {
-  return readState().approvals;
+export async function getBrowserAutomationApprovals() {
+  return (await readState()).approvals;
 }
 
-export function getBrowserAutomationConnections() {
-  return readState().connections;
+export async function getBrowserAutomationConnections() {
+  return (await readState()).connections;
 }
 
-export function getCreditLedgerEntries() {
-  return readState().creditLedger;
+export async function getCreditLedgerEntries() {
+  return (await readState()).creditLedger;
 }
 
-export function getWorkerNodes() {
-  return readState().workers;
+export async function getWorkerNodes() {
+  return (await readState()).workers;
 }
 
-export function getAuditEvents() {
-  return readState().auditEvents;
+export async function getAuditEvents() {
+  return (await readState()).auditEvents;
 }
 
-export function getAccountBySlug(accountSlug: string) {
-  const state = readState();
+export async function getAccountBySlug(accountSlug: string) {
+  const state = await readState();
   syncAccountDerivedFields(state);
   return state.accounts.find((account) => account.slug === accountSlug) ?? null;
 }
 
-export function getWorkflowBySlug(workflowSlug: string) {
-  return readState().workflows.find((workflow) => workflow.slug === workflowSlug) ?? null;
+export async function getWorkflowBySlug(workflowSlug: string) {
+  return (await readState()).workflows.find((workflow) => workflow.slug === workflowSlug) ?? null;
 }
 
-export function getWorkflowVersionsBySlug(workflowSlug: string) {
-  return readState().workflowVersions.filter((version) => version.workflowSlug === workflowSlug);
+export async function getWorkflowVersionsBySlug(workflowSlug: string) {
+  return (await readState()).workflowVersions.filter((version) => version.workflowSlug === workflowSlug);
 }
 
-export function getRunById(runId: string) {
-  return readState().runs.find((run) => run.id === runId) ?? null;
+export async function getRunById(runId: string) {
+  return (await readState()).runs.find((run) => run.id === runId) ?? null;
 }
 
-export function getPrimaryWorkspaceAccount() {
-  return getBrowserAutomationAccounts()[0];
+export async function getPrimaryWorkspaceAccount() {
+  return (await getBrowserAutomationAccounts())[0];
 }
 
-export function resolveWorkspaceAccount(session: BrowserAutomationSession | null) {
+export async function resolveWorkspaceAccount(session: BrowserAutomationSession | null) {
   if (!session) {
     return getPrimaryWorkspaceAccount();
   }
 
-  const existing = getAccountBySlug(session.accountSlug);
+  const existing = await getAccountBySlug(session.accountSlug);
   if (existing) {
     return existing;
   }
@@ -1271,8 +1356,8 @@ export function resolveWorkspaceAccount(session: BrowserAutomationSession | null
   } satisfies BrowserAutomationAccount;
 }
 
-export function ensureWorkspaceAccount(input: { email: string; workspaceCode: string }) {
-  const state = readState();
+export async function ensureWorkspaceAccount(input: { email: string; workspaceCode: string }) {
+  const state = await readState();
   syncAccountDerivedFields(state);
 
   const identity = resolveWorkspaceIdentity(input, state);
@@ -1334,40 +1419,40 @@ export function ensureWorkspaceAccount(input: { email: string; workspaceCode: st
   });
 
   syncAccountDerivedFields(state);
-  writeState(state);
+  await writeState(state);
   return state.accounts.find((account) => account.slug === trialAccount.slug) ?? trialAccount;
 }
 
-export function getAccountWorkflows(accountSlug: string) {
-  return readState().workflows.filter((workflow) => workflow.accountSlug === accountSlug);
+export async function getAccountWorkflows(accountSlug: string) {
+  return (await readState()).workflows.filter((workflow) => workflow.accountSlug === accountSlug);
 }
 
-export function getAccountRuns(accountSlug: string) {
-  return readState().runs.filter((run) => run.accountSlug === accountSlug);
+export async function getAccountRuns(accountSlug: string) {
+  return (await readState()).runs.filter((run) => run.accountSlug === accountSlug);
 }
 
-export function getAccountApprovals(accountSlug: string) {
-  return readState().approvals.filter((approval) => approval.accountSlug === accountSlug);
+export async function getAccountApprovals(accountSlug: string) {
+  return (await readState()).approvals.filter((approval) => approval.accountSlug === accountSlug);
 }
 
-export function getAccountConnections(accountSlug: string) {
-  return readState().connections.filter((connection) => connection.accountSlug === accountSlug);
+export async function getAccountConnections(accountSlug: string) {
+  return (await readState()).connections.filter((connection) => connection.accountSlug === accountSlug);
 }
 
-export function getAccountLedger(accountSlug: string) {
-  return readState().creditLedger.filter((entry) => entry.accountSlug === accountSlug);
+export async function getAccountLedger(accountSlug: string) {
+  return (await readState()).creditLedger.filter((entry) => entry.accountSlug === accountSlug);
 }
 
-export function getAccountAuditEvents(accountSlug: string) {
-  return readState().auditEvents.filter((event) => event.accountSlug === accountSlug);
+export async function getAccountAuditEvents(accountSlug: string) {
+  return (await readState()).auditEvents.filter((event) => event.accountSlug === accountSlug);
 }
 
-export function getWorkerById(workerId: string) {
-  return readState().workers.find((worker) => worker.id === workerId) ?? null;
+export async function getWorkerById(workerId: string) {
+  return (await readState()).workers.find((worker) => worker.id === workerId) ?? null;
 }
 
-export function getAdminControlPlaneSnapshot() {
-  const state = readState();
+export async function getAdminControlPlaneSnapshot() {
+  const state = await readState();
   syncAccountDerivedFields(state);
   normalizeWorkerMetrics(state);
   return buildControlPlaneSnapshot(state);
@@ -1455,8 +1540,8 @@ function getRevenuePerCredit(account: BrowserAutomationAccount) {
   return 0.83;
 }
 
-export function getAdminEconomicsSnapshot(): AdminEconomicsSnapshot {
-  const state = readState();
+export async function getAdminEconomicsSnapshot(): Promise<AdminEconomicsSnapshot> {
+  const state = await readState();
   syncAccountDerivedFields(state);
 
   const runs = state.runs.filter((run) => run.actualCredits > 0);
@@ -1511,12 +1596,12 @@ export function getAdminEconomicsSnapshot(): AdminEconomicsSnapshot {
   };
 }
 
-export function estimateRunLaunch(input: {
+export async function estimateRunLaunch(input: {
   workflowSlug: string;
   targetCount?: number;
   verificationMode?: "standard" | "heavy";
 }) {
-  const workflow = getWorkflowBySlug(input.workflowSlug);
+  const workflow = await getWorkflowBySlug(input.workflowSlug);
 
   if (!workflow) {
     return null;
@@ -1544,7 +1629,7 @@ export function estimateRunLaunch(input: {
   };
 }
 
-export function grantCreditsToAccount(input: {
+export async function grantCreditsToAccount(input: {
   accountSlug: string;
   amount: number;
   note: string;
@@ -1552,7 +1637,7 @@ export function grantCreditsToAccount(input: {
   actor?: string;
   externalRef?: string;
 }) {
-  const state = readState();
+  const state = await readState();
   const account = state.accounts.find((item) => item.slug === input.accountSlug);
 
   if (!account) {
@@ -1596,11 +1681,11 @@ export function grantCreditsToAccount(input: {
   });
 
   syncAccountDerivedFields(state);
-  writeState(state);
+  await writeState(state);
   return state.accounts.find((item) => item.slug === input.accountSlug) ?? account;
 }
 
-export function spendCreditsFromAccount(input: {
+export async function spendCreditsFromAccount(input: {
   accountSlug: string;
   amount: number;
   note: string;
@@ -1608,7 +1693,7 @@ export function spendCreditsFromAccount(input: {
   source?: "billing" | "run" | "admin";
   externalRef?: string;
 }) {
-  const state = readState();
+  const state = await readState();
   const account = state.accounts.find((item) => item.slug === input.accountSlug);
 
   if (!account) {
@@ -1656,18 +1741,18 @@ export function spendCreditsFromAccount(input: {
   });
 
   syncAccountDerivedFields(state);
-  writeState(state);
+  await writeState(state);
   return state.accounts.find((item) => item.slug === input.accountSlug) ?? account;
 }
 
-export function activateAccountBilling(input: {
+export async function activateAccountBilling(input: {
   accountSlug: string;
   billingPlan: string;
   actor?: string;
   note?: string;
   externalRef?: string;
 }) {
-  const state = readState();
+  const state = await readState();
   const account = state.accounts.find((item) => item.slug === input.accountSlug);
   const externalRef = input.externalRef ?? null;
 
@@ -1723,12 +1808,12 @@ export function activateAccountBilling(input: {
     detail: `${input.note ?? `${input.billingPlan} plan activated.`}${externalRef ? ` [ref:${externalRef}]` : ""}`,
   });
 
-  writeState(state);
+  await writeState(state);
   return account;
 }
 
-export function getBillingAuditEvents(accountSlug?: string) {
-  return readState().auditEvents.filter(
+export async function getBillingAuditEvents(accountSlug?: string) {
+  return (await readState()).auditEvents.filter(
     (event) =>
       (!accountSlug || event.accountSlug === accountSlug) &&
       (event.event.startsWith("billing.") || event.event.startsWith("credits.")),

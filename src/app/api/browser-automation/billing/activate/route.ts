@@ -29,7 +29,7 @@ export async function POST(request: Request) {
       couponCode: payload.couponCode ?? null,
     });
 
-    activateAccountBilling({
+    await activateAccountBilling({
       accountSlug: session.accountSlug,
       billingPlan: activation.billingPlan,
       actor: "billing",
@@ -41,7 +41,7 @@ export async function POST(request: Request) {
     });
 
     if (activation.creditsToGrant > 0) {
-      grantCreditsToAccount({
+      await grantCreditsToAccount({
         accountSlug: session.accountSlug,
         amount: activation.creditsToGrant,
         note: `${payload.planId === "topup" ? "Credit top-up" : "Plan activation"} settled via ${activation.source}.`,
@@ -64,7 +64,7 @@ export async function POST(request: Request) {
       { httpOnly: true, sameSite: "lax", path: "/" },
     );
     response.cookies.set(SESSION_COOKIE_NAMES.billingReferenceId, activation.billingReferenceId ?? "", { httpOnly: true, sameSite: "lax", path: "/" });
-    const account = getAccountBySlug(session.accountSlug);
+    const account = await getAccountBySlug(session.accountSlug);
     if (account) {
       applyWorkspaceAccountCookies(response, account);
     }

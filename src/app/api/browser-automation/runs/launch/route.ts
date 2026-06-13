@@ -18,7 +18,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: false, message: "workflowSlug is required." }, { status: 400 });
     }
 
-    const launch = estimateRunLaunch({
+    const launch = await estimateRunLaunch({
       workflowSlug: payload.workflowSlug,
       targetCount: payload.targetCount,
       verificationMode: payload.verificationMode,

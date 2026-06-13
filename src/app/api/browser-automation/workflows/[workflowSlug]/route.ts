@@ -6,7 +6,7 @@ export async function GET(
   { params }: { params: Promise<{ workflowSlug: string }> },
 ) {
   const { workflowSlug } = await params;
-  const workflow = getWorkflowBySlug(workflowSlug);
+  const workflow = await getWorkflowBySlug(workflowSlug);
 
   if (!workflow) {
     return NextResponse.json({ ok: false, message: "Workflow not found." }, { status: 404 });

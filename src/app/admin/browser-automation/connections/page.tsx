@@ -7,8 +7,8 @@ function tone(status: string) {
   return "red" as const;
 }
 
-export default function AdminConnectionsPage() {
-  const connections = getBrowserAutomationConnections();
+export default async function AdminConnectionsPage() {
+  const connections = await getBrowserAutomationConnections();
 
   return (
     <Panel title="Connections and credentials" kicker="Vault and rotation controls">

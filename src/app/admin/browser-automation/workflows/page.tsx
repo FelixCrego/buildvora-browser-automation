@@ -1,9 +1,9 @@
 import { Panel, StatusPill } from "@/components/browser-automation-console";
 import { getBrowserAutomationWorkflows, getWorkflowVersions } from "@/lib/browserAutomationPortal";
 
-export default function AdminWorkflowsPage() {
-  const workflows = getBrowserAutomationWorkflows();
-  const versions = getWorkflowVersions();
+export default async function AdminWorkflowsPage() {
+  const workflows = await getBrowserAutomationWorkflows();
+  const versions = await getWorkflowVersions();
 
   return (
     <div className="grid gap-6">

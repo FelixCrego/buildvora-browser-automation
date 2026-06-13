@@ -1,8 +1,8 @@
 import { Panel, StatusPill } from "@/components/browser-automation-console";
 import { getBrowserAutomationApprovals } from "@/lib/browserAutomationPortal";
 
-export default function AdminApprovalsPage() {
-  const approvals = getBrowserAutomationApprovals();
+export default async function AdminApprovalsPage() {
+  const approvals = await getBrowserAutomationApprovals();
 
   return (
     <Panel title="Approval queue" kicker="Governance backlog">

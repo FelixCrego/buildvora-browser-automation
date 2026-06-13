@@ -27,13 +27,13 @@ export default async function BrowserAutomationWorkspacePage({
   const params = searchParams ? await searchParams : undefined;
   const showWelcome = params?.welcome === "1";
   const session = await getWorkspaceSession();
-  const account = resolveWorkspaceAccount(session);
-  const workflows = getAccountWorkflows(account.slug);
-  const runs = getAccountRuns(account.slug);
-  const approvals = getAccountApprovals(account.slug);
-  const connections = getAccountConnections(account.slug);
-  const ledger = getAccountLedger(account.slug);
-  const billingEvents = getBillingAuditEvents(account.slug);
+  const account = await resolveWorkspaceAccount(session);
+  const workflows = await getAccountWorkflows(account.slug);
+  const runs = await getAccountRuns(account.slug);
+  const approvals = await getAccountApprovals(account.slug);
+  const connections = await getAccountConnections(account.slug);
+  const ledger = await getAccountLedger(account.slug);
+  const billingEvents = await getBillingAuditEvents(account.slug);
 
   return (
     <div className="grid gap-6">

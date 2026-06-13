@@ -46,7 +46,7 @@ export async function POST(request: Request) {
       const accountSlug = resolveAccountSlugFromBillingReference(resource.custom_id) ?? null;
 
       if (accountSlug && resource.id) {
-        activateAccountBilling({
+        await activateAccountBilling({
           accountSlug,
           billingPlan: accountSlug === "northshore-clinics" ? "scale" : "operator",
           actor: "paypal-webhook",
@@ -63,7 +63,7 @@ export async function POST(request: Request) {
         null;
 
       if (accountSlug && resource.id) {
-        grantCreditsToAccount({
+        await grantCreditsToAccount({
           accountSlug,
           amount: 900,
           note: "PayPal top-up completed.",

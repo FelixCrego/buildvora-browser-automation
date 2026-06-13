@@ -61,15 +61,15 @@ function MetricCard({
   );
 }
 
-export default function PortalPage() {
-  const account = getPrimaryWorkspaceAccount();
-  const workflows = getAccountWorkflows(account.slug);
-  const runs = getAccountRuns(account.slug);
-  const approvals = getAccountApprovals(account.slug);
-  const connections = getAccountConnections(account.slug);
-  const ledger = getAccountLedger(account.slug);
-  const snapshot = getAdminControlPlaneSnapshot();
-  const workers = getWorkerNodes();
+export default async function PortalPage() {
+  const account = await getPrimaryWorkspaceAccount();
+  const workflows = await getAccountWorkflows(account.slug);
+  const runs = await getAccountRuns(account.slug);
+  const approvals = await getAccountApprovals(account.slug);
+  const connections = await getAccountConnections(account.slug);
+  const ledger = await getAccountLedger(account.slug);
+  const snapshot = await getAdminControlPlaneSnapshot();
+  const workers = await getWorkerNodes();
   const featuredWorkflow = workflows[0];
 
   return (

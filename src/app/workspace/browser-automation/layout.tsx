@@ -59,7 +59,7 @@ async function WorkspaceLayoutInner({
     redirect("/portal/billing");
   }
 
-  const account = resolveWorkspaceAccount(session);
+  const account = await resolveWorkspaceAccount(session);
 
   return (
     <ConsoleShell

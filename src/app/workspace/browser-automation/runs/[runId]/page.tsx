@@ -17,7 +17,7 @@ export default async function BrowserAutomationRunPage({
   params: Promise<{ runId: string }>;
 }) {
   const { runId } = await params;
-  const run = getRunById(runId);
+  const run = await getRunById(runId);
 
   if (!run) {
     notFound();
