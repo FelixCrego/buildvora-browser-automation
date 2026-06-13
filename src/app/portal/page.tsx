@@ -108,20 +108,23 @@ export default async function PortalPage() {
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
+              <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-700">
+                3-day free trial
+              </span>
               <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-                Client + admin
+                25 credits included
               </span>
               <Link
-                href="/workspace/browser-automation"
+                href="/portal/client/login"
                 className="inline-flex rounded-xl bg-[#0f172a] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#111c33]"
               >
-                Open workspace
+                Start free trial
               </Link>
               <Link
-                href="/admin/browser-automation"
+                href="/workspace/browser-automation"
                 className="inline-flex rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 transition hover:bg-slate-50"
               >
-                Open admin
+                Open workspace
               </Link>
             </div>
           </div>
@@ -136,7 +139,7 @@ export default async function PortalPage() {
           </div>
 
           <div className="mt-4 grid gap-3 md:grid-cols-3">
-            <StepCard step="1. Access" title="Sign in or start the trial" note="New workspaces begin with 25 trial credits for building and test runs." />
+            <StepCard step="1. Trial" title="Start free in minutes" note="Every new workspace begins with a 3-day free trial and 25 credits for building and test runs." />
             <StepCard step="2. Build" title="Use voice or choose a workflow" note="Customers can describe a workflow, review the scope, and see the estimated burn." />
             <StepCard step="3. Run" title="Launch with clear credit usage" note="Protected actions pause for approval and final credits settle after the run ends." />
           </div>

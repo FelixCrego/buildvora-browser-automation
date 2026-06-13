@@ -251,6 +251,15 @@ export default function BrowserAutomationBillingControls({
         </div>
       </div>
 
+      {billingStatus !== "active" ? (
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-4">
+          <p className="text-sm font-semibold text-emerald-900">Recommended path: start with the free trial</p>
+          <p className="mt-1 text-sm leading-relaxed text-emerald-800">
+            New workspaces should use the 3-day, 25-credit trial to build and test the workflow before moving to a paid production plan.
+          </p>
+        </div>
+      ) : null}
+
       <div className="grid gap-3 rounded-[1.5rem] border border-slate-200 bg-[#f8fafc] px-5 py-5 md:grid-cols-3">
         {[
           ["Trial", "3 days and 25 credits", "Start free and prove the workflow before you pay."],

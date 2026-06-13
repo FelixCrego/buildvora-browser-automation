@@ -26,6 +26,13 @@ export default function ClientPortalLoginPage() {
             Clients use one workspace to build, test, approve, and run browser automations with visible credit usage.
           </p>
 
+          <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-4">
+            <p className="text-sm font-semibold text-emerald-900">Free trial included</p>
+            <p className="mt-1 text-sm leading-relaxed text-emerald-800">
+              New workspaces start with 25 credits for 3 days. Build a workflow, test it, and upgrade only when you are ready for production.
+            </p>
+          </div>
+
           <div className="mt-5 grid gap-3">
             {[
               ["Trial", "3 days and 25 credits to validate the workflow."],

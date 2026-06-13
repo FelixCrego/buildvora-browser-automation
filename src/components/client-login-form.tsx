@@ -67,6 +67,13 @@ export default function ClientLoginForm() {
         Enter your work email and workspace code. New workspaces start on a 3-day, 25-credit trial. Existing workspaces reopen with their saved credits, runs, and billing state.
       </p>
 
+      <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-4">
+        <p className="text-sm font-semibold text-emerald-900">Start free before you commit</p>
+        <p className="mt-1 text-sm leading-relaxed text-emerald-800">
+          The trial is designed to get a real workflow built and tested quickly, without paying first.
+        </p>
+      </div>
+
       <div className="mt-5 grid gap-3 sm:grid-cols-3">
         {[
           ["1", "Sign in", "Create or reopen the workspace."],

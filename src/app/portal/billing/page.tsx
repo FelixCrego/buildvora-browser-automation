@@ -33,6 +33,9 @@ export default async function BrowserAutomationBillingPage() {
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
+              <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-700">
+                Free trial: 3 days / 25 credits
+              </span>
               <Link href="/workspace/browser-automation" className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 transition hover:bg-slate-50">
                 Workspace
               </Link>
@@ -52,6 +55,13 @@ export default async function BrowserAutomationBillingPage() {
             <p className="mt-5 text-base leading-relaxed text-slate-600">
               Start with a {TRIAL_POLICY.durationDays}-day self-serve trial, test the workflow, then move into monthly credits when it is ready for live use. Customers always see an estimated credit burn before launch.
             </p>
+
+            <div className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-4">
+              <p className="text-sm font-semibold text-emerald-900">Lead with the free trial</p>
+              <p className="mt-1 text-sm leading-relaxed text-emerald-800">
+                Every new client should be able to start with 25 credits, prove the workflow works, and upgrade only after they see value.
+              </p>
+            </div>
 
             <div className="mt-8 grid gap-3 sm:grid-cols-2">
               {[
