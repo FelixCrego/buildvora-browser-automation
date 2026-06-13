@@ -2,6 +2,8 @@ import Link from "next/link";
 import { Panel, StatusPill } from "@/components/browser-automation-console";
 import { getBrowserAutomationAccounts } from "@/lib/browserAutomationPortal";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminAccountsPage() {
   const accounts = await getBrowserAutomationAccounts();
 

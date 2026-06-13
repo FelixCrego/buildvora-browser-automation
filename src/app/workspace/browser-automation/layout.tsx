@@ -3,6 +3,8 @@ import { getWorkspaceSession, hasWorkspaceAccess } from "@/lib/browserAutomation
 import { resolveWorkspaceAccount } from "@/lib/browserAutomationPortal";
 import { redirect } from "next/navigation";
 
+export const dynamic = "force-dynamic";
+
 const navLinks = [
   {
     href: "/workspace/browser-automation",

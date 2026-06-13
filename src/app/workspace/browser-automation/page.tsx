@@ -11,6 +11,8 @@ import {
   resolveWorkspaceAccount,
 } from "@/lib/browserAutomationPortal";
 
+export const dynamic = "force-dynamic";
+
 function toneForStatus(status: string) {
   if (status === "completed" || status === "healthy") return "green" as const;
   if (status === "running") return "blue" as const;

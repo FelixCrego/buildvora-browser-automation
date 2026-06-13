@@ -1,6 +1,8 @@
 import { Panel, StatCard, StatusPill } from "@/components/browser-automation-console";
 import { getAdminEconomicsSnapshot, getBillingAuditEvents, getCreditLedgerEntries } from "@/lib/browserAutomationPortal";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminCreditsPage() {
   const entries = await getCreditLedgerEntries();
   const billingEvents = await getBillingAuditEvents();

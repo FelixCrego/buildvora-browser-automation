@@ -1,6 +1,8 @@
 import { Panel, StatusPill } from "@/components/browser-automation-console";
 import { getWorkerNodes } from "@/lib/browserAutomationPortal";
 
+export const dynamic = "force-dynamic";
+
 function tone(status: string) {
   if (status === "healthy") return "green" as const;
   if (status === "degraded") return "amber" as const;

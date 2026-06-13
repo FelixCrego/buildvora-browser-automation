@@ -1,5 +1,7 @@
 import ClientLoginForm from "@/components/client-login-form";
 
+export const dynamic = "force-dynamic";
+
 export default function ClientPortalLoginPage() {
   return (
     <main className="min-h-screen bg-[#fbfbfd] px-6 py-16 text-slate-950 md:px-10 md:py-24">

@@ -1,6 +1,8 @@
 import { Panel, StatusPill } from "@/components/browser-automation-console";
 import { getAuditEvents } from "@/lib/browserAutomationPortal";
 
+export const dynamic = "force-dynamic";
+
 function tone(severity: string) {
   if (severity === "info") return "blue" as const;
   if (severity === "warning") return "amber" as const;

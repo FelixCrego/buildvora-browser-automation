@@ -1,6 +1,8 @@
 import { Panel, StatusPill } from "@/components/browser-automation-console";
 import { getBrowserAutomationRuns } from "@/lib/browserAutomationPortal";
 
+export const dynamic = "force-dynamic";
+
 function tone(status: string) {
   if (status === "completed") return "green" as const;
   if (status === "running") return "blue" as const;

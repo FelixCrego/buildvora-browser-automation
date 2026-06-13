@@ -12,6 +12,8 @@ import {
 import { getWorkspaceSession } from "@/lib/browserAutomationAuth";
 import { resolveWorkspaceAccount } from "@/lib/browserAutomationPortal";
 
+export const dynamic = "force-dynamic";
+
 export default async function BrowserAutomationBillingPage() {
   const session = await getWorkspaceSession();
   const account = await resolveWorkspaceAccount(session);

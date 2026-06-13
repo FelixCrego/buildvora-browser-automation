@@ -2,6 +2,8 @@ import { Panel, StatusPill } from "@/components/browser-automation-console";
 import { getWorkspaceSession } from "@/lib/browserAutomationAuth";
 import { getAccountConnections, resolveWorkspaceAccount } from "@/lib/browserAutomationPortal";
 
+export const dynamic = "force-dynamic";
+
 function statusTone(status: string) {
   if (status === "healthy") return "green" as const;
   if (status === "needs_attention") return "amber" as const;

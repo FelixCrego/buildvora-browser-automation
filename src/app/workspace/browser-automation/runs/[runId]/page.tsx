@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { Panel, StatusPill } from "@/components/browser-automation-console";
 import { getRunById } from "@/lib/browserAutomationPortal";
 
+export const dynamic = "force-dynamic";
+
 function statusTone(status: string) {
   if (status === "completed") return "green" as const;
   if (status === "running") return "blue" as const;

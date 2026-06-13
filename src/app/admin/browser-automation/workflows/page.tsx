@@ -1,6 +1,8 @@
 import { Panel, StatusPill } from "@/components/browser-automation-console";
 import { getBrowserAutomationWorkflows, getWorkflowVersions } from "@/lib/browserAutomationPortal";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminWorkflowsPage() {
   const workflows = await getBrowserAutomationWorkflows();
   const versions = await getWorkflowVersions();

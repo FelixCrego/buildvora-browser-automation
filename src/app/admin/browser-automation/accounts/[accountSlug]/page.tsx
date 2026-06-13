@@ -9,6 +9,8 @@ import {
   getAccountWorkflows,
 } from "@/lib/browserAutomationPortal";
 
+export const dynamic = "force-dynamic";
+
 function statusTone(status: string) {
   if (status === "healthy" || status === "completed" || status === "approved") return "green" as const;
   if (status === "running") return "blue" as const;

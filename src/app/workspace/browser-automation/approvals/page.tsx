@@ -3,6 +3,8 @@ import BrowserAutomationApprovalActions from "@/components/browser-automation-ap
 import { getWorkspaceSession } from "@/lib/browserAutomationAuth";
 import { getAccountApprovals, resolveWorkspaceAccount } from "@/lib/browserAutomationPortal";
 
+export const dynamic = "force-dynamic";
+
 export default async function BrowserAutomationApprovalsPage() {
   const session = await getWorkspaceSession();
   const account = await resolveWorkspaceAccount(session);

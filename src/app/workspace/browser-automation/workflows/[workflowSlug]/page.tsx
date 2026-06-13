@@ -3,6 +3,8 @@ import BrowserAutomationLaunchSimulator from "@/components/browser-automation-la
 import { Panel, StatusPill } from "@/components/browser-automation-console";
 import { getWorkflowBySlug } from "@/lib/browserAutomationPortal";
 
+export const dynamic = "force-dynamic";
+
 function riskTone(riskLevel: string) {
   if (riskLevel === "high") return "amber" as const;
   if (riskLevel === "medium") return "blue" as const;

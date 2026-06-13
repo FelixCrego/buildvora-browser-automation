@@ -1,6 +1,8 @@
 import { Panel, StatusPill } from "@/components/browser-automation-console";
 import { getBrowserAutomationApprovals } from "@/lib/browserAutomationPortal";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminApprovalsPage() {
   const approvals = await getBrowserAutomationApprovals();
 

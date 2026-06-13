@@ -295,6 +295,7 @@ function shouldUseManagedStateStore() {
 }
 
 let postgresClient: Sql | null = null;
+let managedStateInitPromise: Promise<void> | null = null;
 
 function getPostgresClient() {
   if (!postgresClient) {
@@ -370,14 +371,27 @@ function writeLocalState(state: BrowserAutomationState) {
 }
 
 async function ensureManagedStateTable() {
+  if (managedStateInitPromise) {
+    return managedStateInitPromise;
+  }
+
   const sql = getPostgresClient();
-  await sql`
-    CREATE TABLE IF NOT EXISTS browser_automation_state_store (
-      key TEXT PRIMARY KEY,
-      json TEXT NOT NULL,
-      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )
-  `;
+  managedStateInitPromise = (async () => {
+    await sql`
+      CREATE TABLE IF NOT EXISTS browser_automation_state_store (
+        key TEXT PRIMARY KEY,
+        json TEXT NOT NULL,
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `;
+  })();
+
+  try {
+    await managedStateInitPromise;
+  } catch (error) {
+    managedStateInitPromise = null;
+    throw error;
+  }
 }
 
 async function readManagedState(): Promise<BrowserAutomationState> {
