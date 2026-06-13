@@ -48,6 +48,7 @@ export default async function BrowserAutomationAdminPage() {
               { href: "/admin/browser-automation/workflows", label: "Workflow release controls", text: "Review draft versions, publish state, retries, approvals, and verification modes.", tone: "green" },
               { href: "/admin/browser-automation/credits", label: "Credit and billing controls", text: "Manage holds, debits, top-ups, service credits, and overage posture.", tone: "amber" },
               { href: "/admin/browser-automation/workers", label: "Worker fleet controls", text: "Inspect runtime health, queue saturation, browser pool assignment, and failover posture.", tone: "red" },
+              { href: "/admin/browser-automation/diagnostics", label: "Launch diagnostics", text: "Check database, billing, runtime, and environment readiness from one page.", tone: "blue" },
             ].map((card) => (
               <Link key={card.href} href={card.href} className="rounded-[1.5rem] border border-slate-200 bg-[#f8f8fa] p-5 transition hover:border-[#0071e3]/25 hover:bg-[#f5f9ff]">
                 <StatusPill tone={card.tone as "blue" | "green" | "amber" | "red"}>{card.label}</StatusPill>

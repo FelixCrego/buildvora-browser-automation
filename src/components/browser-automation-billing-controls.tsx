@@ -166,7 +166,7 @@ export default function BrowserAutomationBillingControls({
 }) {
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [couponCode, setCouponCode] = useState("TEST100OFF");
+  const [couponCode, setCouponCode] = useState("");
 
   async function claimCoupon(planId: string) {
     setLoadingPlan(planId);
@@ -251,10 +251,27 @@ export default function BrowserAutomationBillingControls({
         </div>
       </div>
 
-      <div className="rounded-[1.5rem] border border-slate-200 bg-[#fff8e8] px-5 py-4">
-        <div className="flex flex-wrap items-end gap-3">
+      <div className="grid gap-3 rounded-[1.5rem] border border-slate-200 bg-[#f8fafc] px-5 py-5 md:grid-cols-3">
+        {[
+          ["Trial", "3 days and 25 credits", "Start free and prove the workflow before you pay."],
+          ["Plans", "Simple monthly credit bundles", "Choose the plan that matches how often the workflow runs."],
+          ["Usage", "See estimates before launch", "Approvals, retries, and heavy verification can increase usage."],
+        ].map(([label, title, detail]) => (
+          <div key={label} className="rounded-[1.2rem] border border-slate-200 bg-white px-4 py-4">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#0071e3]">{label}</p>
+            <p className="mt-2 text-sm font-semibold text-slate-950">{title}</p>
+            <p className="mt-1 text-sm leading-relaxed text-slate-600">{detail}</p>
+          </div>
+        ))}
+      </div>
+
+      <details className="rounded-[1.5rem] border border-slate-200 bg-[#fff8e8] px-5 py-4">
+        <summary className="cursor-pointer list-none text-sm font-semibold text-slate-950">
+          Internal testing tools
+        </summary>
+        <div className="mt-4 flex flex-wrap items-end gap-3">
           <label className="min-w-[240px] flex-1 text-sm text-slate-600">
-            Test coupon
+            Coupon code
             <input
               value={couponCode}
               onChange={(event) => setCouponCode(event.target.value.toUpperCase())}
@@ -263,10 +280,10 @@ export default function BrowserAutomationBillingControls({
             />
           </label>
           <div className="rounded-full border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-amber-700">
-            100% off internal testing code
+            Use TEST100OFF for internal launch testing
           </div>
         </div>
-      </div>
+      </details>
 
       <div className="grid gap-4 lg:grid-cols-3">
         {plans.map((plan) => (
@@ -285,6 +302,15 @@ export default function BrowserAutomationBillingControls({
             <p className="mt-4 text-3xl font-semibold tracking-[-0.03em] text-slate-950">{plan.monthlyLabel}</p>
             <p className="mt-2 text-sm font-medium text-[#0071e3]">{plan.creditsLabel}</p>
             <p className="mt-4 text-sm leading-relaxed text-slate-600">{plan.description}</p>
+            <div className="mt-4 rounded-[1rem] bg-[#f8fafc] px-4 py-3 text-sm text-slate-600">
+              {plan.id === "starter"
+                ? "Best for your first production workflow."
+                : plan.id === "operator"
+                  ? "Best for recurring protected workflows."
+                  : plan.id === "scale"
+                    ? "Best for multiple workflows and higher volume."
+                    : "Best for extra capacity without changing your plan."}
+            </div>
             {isCompCoupon(couponCode) ? (
               <button
                 type="button"

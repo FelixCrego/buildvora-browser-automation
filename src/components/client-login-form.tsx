@@ -55,10 +55,24 @@ export default function ClientLoginForm() {
   return (
     <form onSubmit={handleSubmit} className="rounded-[2.5rem] border border-slate-200 bg-white p-7 shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
       <p className="tech text-[10px] uppercase tracking-[0.24em] text-[#0071e3]">Client Sign-In</p>
-      <h2 className="mt-3 text-3xl font-semibold tracking-[-0.03em] text-slate-950">Start or reopen your automation workspace</h2>
+      <h2 className="mt-3 text-3xl font-semibold tracking-[-0.03em] text-slate-950">Open your automation workspace</h2>
       <p className="mt-3 text-sm leading-relaxed text-slate-600">
-        New workspaces start on a 3-day, 25-credit self-serve trial. Existing paid workspaces reopen directly into the client portal.
+        Enter your work email and workspace code. New workspaces start on a 3-day, 25-credit trial. Existing workspaces reopen with their saved credits, runs, and billing state.
       </p>
+
+      <div className="mt-5 grid gap-3 sm:grid-cols-3">
+        {[
+          ["1", "Sign in", "Create or reopen the workspace."],
+          ["2", "Build or choose", "Use voice builder or launch an existing workflow."],
+          ["3", "Run with credits", "See the estimate before execution starts."],
+        ].map(([step, title, detail]) => (
+          <div key={title} className="rounded-[1.2rem] border border-slate-200 bg-[#f8fafc] px-4 py-4">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#0071e3]">Step {step}</p>
+            <p className="mt-2 text-sm font-semibold text-slate-950">{title}</p>
+            <p className="mt-1 text-sm leading-relaxed text-slate-600">{detail}</p>
+          </div>
+        ))}
+      </div>
 
       <div className="mt-6 grid gap-4">
         <label className="text-sm text-slate-600">
@@ -84,9 +98,11 @@ export default function ClientLoginForm() {
 
       <div className="mt-5 rounded-[1.25rem] bg-[#f5f5f7] p-4">
         <p className="text-sm font-semibold text-slate-950">What happens next</p>
-        <p className="mt-2 text-sm leading-relaxed text-slate-600">
-          Self-serve trials go straight into the workspace with 25 credits. Paid workspaces reopen with their active credit balance and billing state.
-        </p>
+        <div className="mt-2 grid gap-2 text-sm leading-relaxed text-slate-600">
+          <p>Trial workspaces start with 25 credits for building and test runs.</p>
+          <p>Paid workspaces open directly into production access with the current credit balance.</p>
+          <p>You will see the next recommended action as soon as the workspace loads.</p>
+        </div>
       </div>
 
       <button

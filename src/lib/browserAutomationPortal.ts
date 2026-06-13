@@ -1,15 +1,20 @@
 import { randomUUID } from "node:crypto";
-import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { DatabaseSync } from "node:sqlite";
 import postgres, { type Sql } from "postgres";
 import {
   BrowserAutomationHarness,
   createPlaywrightAdapter,
   CreditLimitError,
 } from "@buildvora/browser-automation";
-import { CREDIT_EXPLAINER, TRIAL_POLICY } from "./browserAutomationBilling";
+import {
+  CREDIT_EXPLAINER,
+  TRIAL_POLICY,
+  getBillingProviderLabel,
+  getPayPalEnvironment,
+  getPublicPayPalClientId,
+  isPayPalConfigured,
+} from "./browserAutomationBilling";
 import type { BrowserAutomationSession } from "./browserAutomationAuth";
 import type {
   AuditEvent,
@@ -255,18 +260,6 @@ function resolveWorkspaceIdentity(input: { email: string; workspaceCode: string 
   };
 }
 
-function resolveStateFilePath() {
-  if (process.env.BROWSER_AUTOMATION_STATE_PATH) {
-    return process.env.BROWSER_AUTOMATION_STATE_PATH;
-  }
-
-  if (process.env.VERCEL) {
-    return path.join(os.tmpdir(), "buildvora-browser-automation.db");
-  }
-
-  return path.join(/*turbopackIgnore: true*/ process.cwd(), "data", "browser-automation.db");
-}
-
 function buildSeedState(): BrowserAutomationState {
   return {
     accounts: deepClone(getSeedAccounts()),
@@ -296,6 +289,7 @@ function shouldUseManagedStateStore() {
 
 let postgresClient: Sql | null = null;
 let managedStateInitPromise: Promise<void> | null = null;
+let inMemoryFallbackState: BrowserAutomationState | null = null;
 
 function getPostgresClient() {
   if (!postgresClient) {
@@ -310,64 +304,16 @@ function getPostgresClient() {
   return postgresClient;
 }
 
-function withLocalDatabase<T>(
-  callback: (database: DatabaseSync) => T,
-  options: { initialize?: boolean } = {},
-) {
-  const databasePath = resolveStateFilePath();
-  const directory = path.dirname(databasePath);
-
-  if (!fs.existsSync(directory)) {
-    fs.mkdirSync(directory, { recursive: true });
+async function readLocalState(): Promise<BrowserAutomationState> {
+  if (!inMemoryFallbackState) {
+    inMemoryFallbackState = buildSeedState();
   }
 
-  const database = new DatabaseSync(databasePath);
-  if (options.initialize) {
-    database.exec(`
-      CREATE TABLE IF NOT EXISTS state_store (
-        key TEXT PRIMARY KEY,
-        json TEXT NOT NULL,
-        updated_at TEXT NOT NULL
-      );
-    `);
-  }
-
-  try {
-    return callback(database);
-  } finally {
-    database.close();
-  }
+  return deepClone(inMemoryFallbackState);
 }
 
-function readLocalState(): BrowserAutomationState {
-  const databasePath = resolveStateFilePath();
-  if (!fs.existsSync(databasePath)) {
-    return buildSeedState();
-  }
-
-  return withLocalDatabase((database) => {
-    const row = database
-      .prepare("SELECT json FROM state_store WHERE key = ?")
-      .get("browser-automation-state") as { json: string } | undefined;
-
-    if (!row) {
-      return buildSeedState();
-    }
-
-    return JSON.parse(row.json) as BrowserAutomationState;
-  });
-}
-
-function writeLocalState(state: BrowserAutomationState) {
-  withLocalDatabase((database) => {
-    database
-      .prepare(`
-        INSERT INTO state_store (key, json, updated_at)
-        VALUES (?, ?, ?)
-        ON CONFLICT(key) DO UPDATE SET json = excluded.json, updated_at = excluded.updated_at
-      `)
-      .run("browser-automation-state", JSON.stringify(state), nowIso());
-  }, { initialize: true });
+async function writeLocalState(state: BrowserAutomationState) {
+  inMemoryFallbackState = deepClone(state);
 }
 
 async function ensureManagedStateTable() {
@@ -438,7 +384,57 @@ async function writeState(state: BrowserAutomationState) {
     return;
   }
 
-  writeLocalState(state);
+  await writeLocalState(state);
+}
+
+export async function getLaunchDiagnostics() {
+  const storageMode = shouldUseManagedStateStore() ? "postgres" : "local-fallback";
+  let databaseStatus: "ready" | "error" = "ready";
+  let databaseMessage = "State store reachable.";
+  let stateSnapshot: {
+    accounts: number;
+    workflows: number;
+    runs: number;
+    approvals: number;
+  } | null = null;
+
+  try {
+    const state = await readState();
+    stateSnapshot = {
+      accounts: state.accounts.length,
+      workflows: state.workflows.length,
+      runs: state.runs.length,
+      approvals: state.approvals.length,
+    };
+  } catch (error) {
+    databaseStatus = "error";
+    databaseMessage = error instanceof Error ? error.message : "Unknown state store error.";
+  }
+
+  return {
+    checkedAt: nowIso(),
+    storageMode,
+    database: {
+      status: databaseStatus,
+      message:
+        storageMode === "local-fallback"
+          ? "Managed database not configured. Using in-memory fallback state for this process."
+          : databaseMessage,
+      managedUrlPresent: Boolean(getManagedStateDatabaseUrl()),
+      snapshot: stateSnapshot,
+    },
+    billing: {
+      provider: getBillingProviderLabel(),
+      paypalConfigured: isPayPalConfigured(),
+      paypalEnvironment: getPayPalEnvironment(),
+      paypalClientIdPresent: Boolean(getPublicPayPalClientId()),
+    },
+    runtime: {
+      browserRuntime: process.env.BROWSER_AUTOMATION_RUNTIME === "playwright" ? "playwright" : "simulated",
+      openAiConfigured: Boolean(process.env.OPENAI_API_KEY),
+      workerMode: process.env.BROWSER_AUTOMATION_RUNTIME === "playwright" ? "live-browser" : "simulated-browser",
+    },
+  };
 }
 
 function getBalanceFromLedger(state: BrowserAutomationState, accountSlug: string) {

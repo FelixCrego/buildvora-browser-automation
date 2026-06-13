@@ -36,6 +36,7 @@ export default async function BrowserAutomationWorkspacePage({
   const connections = await getAccountConnections(account.slug);
   const ledger = await getAccountLedger(account.slug);
   const billingEvents = await getBillingAuditEvents(account.slug);
+  const attentionConnections = connections.filter((connection) => connection.status !== "healthy");
 
   return (
     <div className="grid gap-6">
@@ -50,6 +51,41 @@ export default async function BrowserAutomationWorkspacePage({
         </div>
       ) : null}
 
+      <Panel title="What to do next" kicker="First-run path">
+        <div className="grid gap-4 lg:grid-cols-3">
+          {[
+            {
+              title: "Build or choose a workflow",
+              detail: "Use the voice builder for a new automation, or open a provisioned workflow and review the estimated credit burn.",
+              href: "/workspace/browser-automation/create",
+              cta: "Open voice builder",
+            },
+            {
+              title: "Verify billing and credits",
+              detail: "Trial users can test immediately. Upgrade when the workflow is ready for production publishing or ongoing runs.",
+              href: "/portal/billing",
+              cta: "Review billing",
+            },
+            {
+              title: "Check blockers before launch",
+              detail: "Look for pending approvals, disconnected integrations, or workflows that still need a final review.",
+              href: "/workspace/browser-automation/connections",
+              cta: "Review blockers",
+            },
+          ].map((card) => (
+            <Link
+              key={card.title}
+              href={card.href}
+              className="rounded-[1.5rem] border border-slate-200 bg-white p-5 transition hover:border-[#0071e3]/20 hover:bg-[#f5f9ff]"
+            >
+              <p className="text-sm font-semibold text-slate-950">{card.title}</p>
+              <p className="mt-2 text-sm leading-relaxed text-slate-600">{card.detail}</p>
+              <p className="mt-4 text-xs font-semibold uppercase tracking-[0.18em] text-[#0071e3]">{card.cta}</p>
+            </Link>
+          ))}
+        </div>
+      </Panel>
+
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Available Credits" value={account.availableCredits.toLocaleString()} detail={`${account.monthlyCredits.toLocaleString()} included credits on the ${account.planName} plan.`} />
         <StatCard label="Active Workflows" value={String(workflows.length)} detail="Provisioned browser automations now available to launch from this workspace." />
@@ -60,7 +96,11 @@ export default async function BrowserAutomationWorkspacePage({
       <div className="grid gap-6 xl:grid-cols-[1.08fr_0.92fr]">
         <Panel title="Provisioned workflows" kicker="Run-ready automation">
           <div className="grid gap-4">
-            {workflows.map((workflow) => (
+            {workflows.length === 0 ? (
+              <div className="rounded-[1.5rem] border border-dashed border-slate-300 bg-[#f8fafc] p-6 text-sm leading-relaxed text-slate-600">
+                No workflows are provisioned yet. Start with the voice builder to describe the browser task you want automated, then return here to run it.
+              </div>
+            ) : workflows.map((workflow) => (
               <Link
                 key={workflow.id}
                 href={`/workspace/browser-automation/workflows/${workflow.slug}`}
@@ -115,7 +155,11 @@ export default async function BrowserAutomationWorkspacePage({
             <div className="rounded-[1.4rem] border border-slate-200 bg-white p-5">
               <p className="text-sm font-semibold text-slate-950">Pending approvals</p>
               <div className="mt-3 grid gap-3">
-                {approvals.map((approval) => (
+                {approvals.length === 0 ? (
+                  <div className="rounded-[1rem] border border-slate-200 bg-[#f5f5f7] px-4 py-3 text-sm text-slate-600">
+                    No approvals are blocking the workspace right now.
+                  </div>
+                ) : approvals.map((approval) => (
                   <Link
                     key={approval.id}
                     href="/workspace/browser-automation/approvals"
@@ -132,9 +176,11 @@ export default async function BrowserAutomationWorkspacePage({
             <div className="rounded-[1.4rem] border border-slate-200 bg-white p-5">
               <p className="text-sm font-semibold text-slate-950">Connections needing attention</p>
               <div className="mt-3 grid gap-3">
-                {connections
-                  .filter((connection) => connection.status !== "healthy")
-                  .map((connection) => (
+                {attentionConnections.length === 0 ? (
+                  <div className="rounded-[1rem] border border-slate-200 bg-[#f5f5f7] px-4 py-3 text-sm text-slate-600">
+                    All tracked connections are healthy.
+                  </div>
+                ) : attentionConnections.map((connection) => (
                     <Link
                       key={connection.id}
                       href="/workspace/browser-automation/connections"
@@ -177,7 +223,11 @@ export default async function BrowserAutomationWorkspacePage({
 
       <Panel title="Recent runs" kicker="Execution history">
         <div className="grid gap-4">
-          {runs.map((run) => (
+          {runs.length === 0 ? (
+            <div className="rounded-[1.5rem] border border-dashed border-slate-300 bg-[#f8fafc] p-6 text-sm leading-relaxed text-slate-600">
+              No runs yet. Open a workflow, review the estimate, and launch your first test run from this workspace.
+            </div>
+          ) : runs.map((run) => (
             <Link
               key={run.id}
               href={`/workspace/browser-automation/runs/${run.id}`}

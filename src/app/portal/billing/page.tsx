@@ -27,25 +27,33 @@ export default async function BrowserAutomationBillingPage() {
           <section className="rounded-[2.4rem] border border-slate-200 bg-white p-8 shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
             <p className="tech text-[10px] uppercase tracking-[0.28em] text-[#0071e3]">Billing + Paywall</p>
             <h1 className="editorial mt-4 text-5xl leading-[0.94] tracking-[-0.05em] text-slate-950">
-              Credits-based access controls for the automation workspace.
+              Simple plans, visible credits, and a clear path from trial to production.
             </h1>
             <p className="mt-5 text-base leading-relaxed text-slate-600">
-              Start with a {TRIAL_POLICY.durationDays}-day self-serve trial, then move into monthly credits as soon as the automation is ready for production use.
+              Start with a {TRIAL_POLICY.durationDays}-day self-serve trial, test the workflow, then move into monthly credits when it is ready for live use. Customers always see an estimated credit burn before launch.
             </p>
 
-            <div className="mt-8 grid gap-3">
+            <div className="mt-8 grid gap-3 sm:grid-cols-2">
               {[
-                `Workspace account: ${account.name}`,
-                `Current plan target: ${account.planName}`,
-                `Available credits: ${account.availableCredits.toLocaleString()}`,
-                `Trial model: ${TRIAL_POLICY.durationDays} days with ${TRIAL_POLICY.credits} credits and ${TRIAL_POLICY.maxConcurrentRuns} concurrent run.`,
-                "Light runs are about 10 credits, standard runs about 18, and heavy runs about 30.",
-                "Protected runs reserve credits before execution and settle the final burn at the end of the run.",
-              ].map((item) => (
-                <div key={item} className="rounded-[1.2rem] border border-slate-200 bg-[#f5f5f7] px-4 py-3 text-sm text-slate-600">
-                  {item}
+                ["Workspace", account.name],
+                ["Current plan", account.planName],
+                ["Available credits", account.availableCredits.toLocaleString()],
+                ["Trial policy", `${TRIAL_POLICY.durationDays} days / ${TRIAL_POLICY.credits} credits`],
+              ].map(([label, value]) => (
+                <div key={label} className="rounded-[1.2rem] border border-slate-200 bg-[#f5f5f7] px-4 py-4">
+                  <p className="text-[10px] uppercase tracking-[0.18em] text-slate-500">{label}</p>
+                  <p className="mt-2 text-sm font-semibold text-slate-950">{value}</p>
                 </div>
               ))}
+            </div>
+
+            <div className="mt-6 rounded-[1.4rem] border border-slate-200 bg-[#f8fafc] p-5">
+              <p className="text-sm font-semibold text-slate-950">What the customer should understand</p>
+              <div className="mt-3 grid gap-2 text-sm leading-relaxed text-slate-600">
+                <p>1. Start free, build the workflow, and test it quickly.</p>
+                <p>2. Upgrade only when the automation is ready for real production runs.</p>
+                <p>3. Credits are the only usage unit customers need to understand.</p>
+              </div>
             </div>
 
             <div className="mt-8 flex flex-wrap gap-3">
@@ -79,7 +87,7 @@ export default async function BrowserAutomationBillingPage() {
           <p className="tech text-[10px] uppercase tracking-[0.28em] text-[#0071e3]">Launch pricing</p>
           <h2 className="mt-3 text-3xl font-semibold tracking-[-0.04em] text-slate-950">Easy to understand credits with margin built in.</h2>
           <p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-600">
-            Customers buy outcome capacity, not tokens or browser minutes. Every workflow build, test, publish, and production run is metered in credits.
+            Customers buy outcome capacity, not tokens or browser minutes. Every workflow build, test, publish, and production run is metered in credits, with longer or more complex runs using more.
           </p>
 
           <div className="mt-6 grid gap-4 lg:grid-cols-5">

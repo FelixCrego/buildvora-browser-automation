@@ -63,6 +63,24 @@ function MetricCard({
   );
 }
 
+function StepCard({
+  step,
+  title,
+  note,
+}: {
+  step: string;
+  title: string;
+  note: string;
+}) {
+  return (
+    <article className="rounded-[1.3rem] border border-slate-200 bg-white px-4 py-4 shadow-[0_10px_30px_rgba(15,23,42,0.05)]">
+      <p className="tech text-[10px] uppercase tracking-[0.22em] text-[#0071e3]">{step}</p>
+      <p className="mt-2 text-sm font-semibold text-slate-950">{title}</p>
+      <p className="mt-1 text-sm leading-relaxed text-slate-600">{note}</p>
+    </article>
+  );
+}
+
 export default async function PortalPage() {
   const account = await getPrimaryWorkspaceAccount();
   const workflows = await getAccountWorkflows(account.slug);
@@ -82,11 +100,10 @@ export default async function PortalPage() {
             <div className="max-w-4xl">
               <p className="tech text-[10px] uppercase tracking-[0.3em] text-[#0071e3]">BuildVora Browser Automation</p>
               <h1 className="editorial mt-3 text-[clamp(2.5rem,4.3vw,4.8rem)] leading-[0.93] tracking-[-0.05em] text-slate-950">
-                Unified launch command center
+                One place to build, test, approve, and run browser automation
               </h1>
               <p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-600 md:text-base">
-                One working surface for client execution and internal operations. Launch workflows, settle approvals,
-                monitor credits, and act on worker or connection issues without leaving the page.
+                This page keeps the client path simple while still exposing the operator controls behind the product. Start a trial, review credits, launch workflows, settle approvals, and step into the backend only when needed.
               </p>
             </div>
 
@@ -113,6 +130,12 @@ export default async function PortalPage() {
             <MetricCard label="Active runs" value={String(snapshot.totals.activeRuns)} note="Running, queued, blocked" />
             <MetricCard label="Queue depth" value={String(snapshot.totals.queueDepth)} note="Across worker fleet" />
             <MetricCard label="Worker alerts" value={String(snapshot.totals.degradedWorkers)} note="Operator attention" />
+          </div>
+
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
+            <StepCard step="1. Access" title="Sign in or start the trial" note="New workspaces begin with 25 trial credits for building and test runs." />
+            <StepCard step="2. Build" title="Use voice or choose a workflow" note="Customers can describe a workflow, review the scope, and see the estimated burn." />
+            <StepCard step="3. Run" title="Launch with clear credit usage" note="Protected actions pause for approval and final credits settle after the run ends." />
           </div>
         </div>
       </section>
@@ -306,8 +329,8 @@ export default async function PortalPage() {
 
           <section id="access" className="rounded-[1.9rem] border border-slate-200 bg-white p-6 shadow-[0_18px_50px_rgba(15,23,42,0.06)]">
             <div>
-              <p className="tech text-[10px] uppercase tracking-[0.24em] text-[#0071e3]">Access</p>
-              <h2 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950">Client sign-in and route shortcuts</h2>
+                <p className="tech text-[10px] uppercase tracking-[0.24em] text-[#0071e3]">Access</p>
+              <h2 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950">Client access and next steps</h2>
             </div>
 
             <div className="mt-5">
