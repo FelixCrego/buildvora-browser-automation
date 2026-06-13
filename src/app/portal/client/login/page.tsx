@@ -1,31 +1,49 @@
 import ClientLoginForm from "@/components/client-login-form";
+import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
 export default function ClientPortalLoginPage() {
   return (
-    <main className="min-h-screen bg-[#fbfbfd] px-6 py-16 text-slate-950 md:px-10 md:py-24">
-      <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[0.96fr_1.04fr]">
-        <div className="rounded-[2.5rem] border border-slate-200 bg-white p-7 shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
-          <p className="text-sm font-medium text-[#0071e3]">Client Access</p>
-          <h1 className="editorial mt-4 text-5xl leading-[0.94] tracking-[-0.04em] text-slate-950">Browser automation your client can actually sign in and run.</h1>
-          <p className="mt-5 text-base leading-relaxed text-slate-600">
-            This is the customer-facing workspace. Clients can sign in, start a short trial, build a workflow from voice, approve protected actions, and run automation with visible credit estimates.
+    <main className="min-h-screen bg-[#f4f7fb] text-slate-950">
+      <div className="border-b border-slate-200 bg-white">
+        <div className="mx-auto flex max-w-[1180px] items-center justify-between gap-4 px-6 py-4 md:px-8">
+          <div>
+            <p className="tech text-[10px] uppercase tracking-[0.22em] text-sky-700">Client Access</p>
+            <p className="mt-1 text-sm text-slate-500">Secure entry for trial and production workspaces</p>
+          </div>
+          <Link href="/portal" className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-slate-50">
+            Back to portal
+          </Link>
+        </div>
+      </div>
+
+      <div className="mx-auto grid max-w-[1180px] gap-6 px-6 py-8 md:px-8 lg:grid-cols-[340px_1fr]">
+        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Workspace access</p>
+          <h1 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950">Sign in to your automation workspace</h1>
+          <p className="mt-3 text-sm leading-relaxed text-slate-600">
+            Clients use one workspace to build, test, approve, and run browser automations with visible credit usage.
           </p>
-          <div className="mt-8 grid gap-3">
+
+          <div className="mt-5 grid gap-3">
             {[
-              "Start a 3-day trial with 25 credits",
-              "Run provisioned workflows from one workspace",
-              "Approve sensitive steps before execution continues",
-              "Track credits, run evidence, and connection health",
-            ].map((item) => (
-              <div key={item} className="rounded-[1.25rem] border border-slate-200 bg-[#f5f5f7] px-4 py-3 text-sm text-slate-600">
-                {item}
+              ["Trial", "3 days and 25 credits to validate the workflow."],
+              ["Approvals", "Protected actions pause until the right person releases them."],
+              ["Runs", "Every launch shows an estimate before credits are used."],
+              ["Evidence", "Review run history, outputs, and connection health in one place."],
+            ].map(([label, copy]) => (
+              <div key={label} className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4">
+                <p className="text-sm font-semibold text-slate-950">{label}</p>
+                <p className="mt-1 text-sm leading-relaxed text-slate-600">{copy}</p>
               </div>
             ))}
           </div>
-        </div>
-        <ClientLoginForm />
+        </section>
+
+        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <ClientLoginForm />
+        </section>
       </div>
     </main>
   );

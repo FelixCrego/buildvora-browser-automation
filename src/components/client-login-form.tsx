@@ -53,9 +53,16 @@ export default function ClientLoginForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="rounded-[2.5rem] border border-slate-200 bg-white p-7 shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
-      <p className="tech text-[10px] uppercase tracking-[0.24em] text-[#0071e3]">Client Sign-In</p>
-      <h2 className="mt-3 text-3xl font-semibold tracking-[-0.03em] text-slate-950">Open your automation workspace</h2>
+    <form onSubmit={handleSubmit}>
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="tech text-[10px] uppercase tracking-[0.22em] text-sky-700">Client Sign-In</p>
+          <h2 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950">Open your workspace</h2>
+        </div>
+        <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+          Secure session
+        </span>
+      </div>
       <p className="mt-3 text-sm leading-relaxed text-slate-600">
         Enter your work email and workspace code. New workspaces start on a 3-day, 25-credit trial. Existing workspaces reopen with their saved credits, runs, and billing state.
       </p>
@@ -66,8 +73,8 @@ export default function ClientLoginForm() {
           ["2", "Build or choose", "Use voice builder or launch an existing workflow."],
           ["3", "Run with credits", "See the estimate before execution starts."],
         ].map(([step, title, detail]) => (
-          <div key={title} className="rounded-[1.2rem] border border-slate-200 bg-[#f8fafc] px-4 py-4">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#0071e3]">Step {step}</p>
+          <div key={title} className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-sky-700">Step {step}</p>
             <p className="mt-2 text-sm font-semibold text-slate-950">{title}</p>
             <p className="mt-1 text-sm leading-relaxed text-slate-600">{detail}</p>
           </div>
@@ -82,7 +89,7 @@ export default function ClientLoginForm() {
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             placeholder="you@company.com"
-            className="mt-2 w-full rounded-[1.25rem] border border-slate-200 bg-white px-4 py-3 text-slate-950 outline-none transition focus:border-[#0071e3]"
+            className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-950 outline-none transition focus:border-sky-600"
           />
         </label>
         <label className="text-sm text-slate-600">
@@ -91,12 +98,12 @@ export default function ClientLoginForm() {
             value={workspaceCode}
             onChange={(event) => setWorkspaceCode(event.target.value)}
             placeholder="TRIAL-ALPHA-01"
-            className="mt-2 w-full rounded-[1.25rem] border border-slate-200 bg-white px-4 py-3 text-slate-950 outline-none transition focus:border-[#0071e3]"
+            className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-950 outline-none transition focus:border-sky-600"
           />
         </label>
       </div>
 
-      <div className="mt-5 rounded-[1.25rem] bg-[#f5f5f7] p-4">
+      <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4">
         <p className="text-sm font-semibold text-slate-950">What happens next</p>
         <div className="mt-2 grid gap-2 text-sm leading-relaxed text-slate-600">
           <p>Trial workspaces start with 25 credits for building and test runs.</p>
@@ -108,7 +115,7 @@ export default function ClientLoginForm() {
       <button
         type="submit"
         disabled={loading}
-        className="mt-6 inline-flex rounded-full bg-[#0071e3] px-5 py-3 text-sm font-medium text-white transition hover:bg-[#0077ed] disabled:cursor-not-allowed disabled:opacity-70"
+        className="mt-6 inline-flex rounded-xl bg-[#0f172a] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#111c33] disabled:cursor-not-allowed disabled:opacity-70"
       >
         {loading ? "Opening Workspace..." : "Open Workspace"}
       </button>

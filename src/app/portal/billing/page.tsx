@@ -21,14 +21,34 @@ export default async function BrowserAutomationBillingPage() {
   const checkoutPlans = BILLING_PLANS;
 
   return (
-    <main className="min-h-screen bg-[#fbfbfd] px-6 py-16 text-slate-950 md:px-10 md:py-24">
-      <div className="mx-auto max-w-7xl">
+    <main className="min-h-screen bg-[#f4f7fb] px-6 py-8 text-slate-950 md:px-8 md:py-10">
+      <div className="mx-auto max-w-[1320px]">
+        <div className="mb-6 rounded-2xl border border-slate-200 bg-white px-6 py-5 shadow-sm">
+          <p className="tech text-[10px] uppercase tracking-[0.22em] text-sky-700">Billing</p>
+          <div className="mt-2 flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-semibold tracking-[-0.03em] text-slate-950">Plans, credits, and workspace access</h1>
+              <p className="mt-1 text-sm leading-relaxed text-slate-500">
+                Start on trial, upgrade when the workflow is ready, and keep usage visible before every run.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Link href="/workspace/browser-automation" className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 transition hover:bg-slate-50">
+                Workspace
+              </Link>
+              <Link href="/portal" className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 transition hover:bg-slate-50">
+                Portal
+              </Link>
+            </div>
+          </div>
+        </div>
+
         <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-          <section className="rounded-[2.4rem] border border-slate-200 bg-white p-8 shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
-            <p className="tech text-[10px] uppercase tracking-[0.28em] text-[#0071e3]">Billing + Paywall</p>
-            <h1 className="editorial mt-4 text-5xl leading-[0.94] tracking-[-0.05em] text-slate-950">
-              Simple plans, visible credits, and a clear path from trial to production.
-            </h1>
+          <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Workspace summary</p>
+            <h2 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950">
+              Pricing that matches how customers use the product.
+            </h2>
             <p className="mt-5 text-base leading-relaxed text-slate-600">
               Start with a {TRIAL_POLICY.durationDays}-day self-serve trial, test the workflow, then move into monthly credits when it is ready for live use. Customers always see an estimated credit burn before launch.
             </p>
@@ -40,14 +60,14 @@ export default async function BrowserAutomationBillingPage() {
                 ["Available credits", account.availableCredits.toLocaleString()],
                 ["Trial policy", `${TRIAL_POLICY.durationDays} days / ${TRIAL_POLICY.credits} credits`],
               ].map(([label, value]) => (
-                <div key={label} className="rounded-[1.2rem] border border-slate-200 bg-[#f5f5f7] px-4 py-4">
-                  <p className="text-[10px] uppercase tracking-[0.18em] text-slate-500">{label}</p>
+                <div key={label} className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">{label}</p>
                   <p className="mt-2 text-sm font-semibold text-slate-950">{value}</p>
                 </div>
               ))}
             </div>
 
-            <div className="mt-6 rounded-[1.4rem] border border-slate-200 bg-[#f8fafc] p-5">
+            <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-5">
               <p className="text-sm font-semibold text-slate-950">What the customer should understand</p>
               <div className="mt-3 grid gap-2 text-sm leading-relaxed text-slate-600">
                 <p>1. Start free, build the workflow, and test it quickly.</p>
@@ -59,20 +79,20 @@ export default async function BrowserAutomationBillingPage() {
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
                 href="/portal/client/login"
-                className="rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-950 transition hover:border-[#0071e3]/20 hover:bg-[#f5f9ff]"
+                className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-slate-50"
               >
                 Back to sign-in
               </Link>
               <Link
                 href="/portal"
-                className="rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-950 transition hover:border-[#0071e3]/20 hover:bg-[#f5f9ff]"
+                className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-slate-50"
               >
-                Unified portal
+                Portal
               </Link>
             </div>
           </section>
 
-          <section className="rounded-[2.4rem] border border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f7f9fc_100%)] p-8 shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
+          <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <BrowserAutomationBillingControls
               plans={checkoutPlans}
               billingStatus={session?.billingStatus ?? "inactive"}
@@ -83,20 +103,20 @@ export default async function BrowserAutomationBillingPage() {
           </section>
         </div>
 
-        <section className="mt-6 rounded-[2.4rem] border border-slate-200 bg-white p-8 shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
-          <p className="tech text-[10px] uppercase tracking-[0.28em] text-[#0071e3]">Launch pricing</p>
-          <h2 className="mt-3 text-3xl font-semibold tracking-[-0.04em] text-slate-950">Easy to understand credits with margin built in.</h2>
+        <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Launch pricing</p>
+          <h2 className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-slate-950">Straightforward credit bundles</h2>
           <p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-600">
             Customers buy outcome capacity, not tokens or browser minutes. Every workflow build, test, publish, and production run is metered in credits, with longer or more complex runs using more.
           </p>
 
           <div className="mt-6 grid gap-4 lg:grid-cols-5">
             {pricingCards.map((card) => (
-              <article key={card.id} className="rounded-[1.7rem] border border-slate-200 bg-[#f8fafc] p-5">
+              <article key={card.id} className="rounded-xl border border-slate-200 bg-slate-50 p-5">
                 <p className="text-lg font-semibold text-slate-950">{card.name}</p>
                 <p className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950">{card.price}</p>
                 <p className="mt-1 text-sm text-slate-500">{card.sublabel}</p>
-                <p className="mt-3 text-sm font-medium text-[#0071e3]">{card.credits}</p>
+                <p className="mt-3 text-sm font-medium text-sky-700">{card.credits}</p>
                 <div className="mt-4 grid gap-2 text-sm text-slate-600">
                   {card.bullets.map((bullet) => (
                     <p key={bullet}>{bullet}</p>
@@ -108,9 +128,9 @@ export default async function BrowserAutomationBillingPage() {
         </section>
 
         <section className="mt-6 grid gap-6 lg:grid-cols-[0.88fr_1.12fr]">
-          <div className="rounded-[2.4rem] border border-slate-200 bg-white p-8 shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
-            <p className="tech text-[10px] uppercase tracking-[0.28em] text-[#0071e3]">Credit guide</p>
-            <h2 className="mt-3 text-3xl font-semibold tracking-[-0.04em] text-slate-950">What customers should expect to spend.</h2>
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Credit guide</p>
+            <h2 className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-slate-950">Expected usage ranges</h2>
             <div className="mt-6 grid gap-3">
               {[
                 `Voice build: ${CREDIT_EXPLAINER.voiceBuild} credits`,
@@ -121,19 +141,19 @@ export default async function BrowserAutomationBillingPage() {
                 `Approval checkpoint: +${CREDIT_EXPLAINER.approvalCheckpoint} credits`,
                 `Full retry: +${CREDIT_EXPLAINER.retry} credits`,
               ].map((line) => (
-                <div key={line} className="rounded-[1.2rem] border border-slate-200 bg-[#f5f5f7] px-4 py-3 text-sm text-slate-600">
+                <div key={line} className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
                   {line}
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="rounded-[2.4rem] border border-slate-200 bg-white p-8 shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
-            <p className="tech text-[10px] uppercase tracking-[0.28em] text-[#0071e3]">Billing FAQ</p>
-            <h2 className="mt-3 text-3xl font-semibold tracking-[-0.04em] text-slate-950">Clear expectations before every run.</h2>
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Billing FAQ</p>
+            <h2 className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-slate-950">Clear expectations before every run</h2>
             <div className="mt-6 grid gap-4">
               {BILLING_FAQ.map((item) => (
-                <article key={item.question} className="rounded-[1.4rem] border border-slate-200 bg-[#f8fafc] p-5">
+                <article key={item.question} className="rounded-xl border border-slate-200 bg-slate-50 p-5">
                   <p className="text-sm font-semibold text-slate-950">{item.question}</p>
                   <p className="mt-2 text-sm leading-relaxed text-slate-600">{item.answer}</p>
                 </article>
