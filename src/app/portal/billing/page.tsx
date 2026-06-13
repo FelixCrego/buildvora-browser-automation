@@ -86,6 +86,23 @@ export default async function BrowserAutomationBillingPage() {
               </div>
             </div>
 
+            <div className="mt-5 rounded-2xl border border-sky-200 bg-[linear-gradient(135deg,#eff6ff_0%,#ffffff_55%,#ecfeff_100%)] p-5">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-sky-700">Trial value</p>
+              <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                {[
+                  ["Build one workflow", "5 credits", "Generate a real automation scope from voice or typed input."],
+                  ["Run two light tests", "10 + 10 credits", "Use the rest of the trial to validate execution and approvals."],
+                  ["Worth $25", "at $1/credit", "The trial is product value, not just a demo screen."],
+                ].map(([title, amount, note]) => (
+                  <div key={title} className="rounded-xl border border-slate-200 bg-white px-4 py-4">
+                    <p className="text-sm font-semibold text-slate-950">{title}</p>
+                    <p className="mt-2 text-sm font-medium text-sky-700">{amount}</p>
+                    <p className="mt-2 text-sm leading-relaxed text-slate-600">{note}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
                 href="/portal/client/login"

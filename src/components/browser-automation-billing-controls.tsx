@@ -274,6 +274,34 @@ export default function BrowserAutomationBillingControls({
         ))}
       </div>
 
+      {billingStatus !== "active" ? (
+        <div className="rounded-2xl border border-sky-200 bg-[linear-gradient(135deg,#eff6ff_0%,#ffffff_55%,#ecfeff_100%)] px-5 py-5">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="max-w-2xl">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-sky-700">Why the trial is compelling</p>
+              <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                25 credits is enough to build a workflow and actually test it. This is meant to prove value, not just show a static demo.
+              </p>
+            </div>
+            <span className="rounded-full border border-sky-200 bg-white px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-sky-700">
+              $25 value included
+            </span>
+          </div>
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
+            {[
+              ["Build + 2 tests", "5 + 10 + 10 credits"],
+              ["Build + 1 standard run", "5 + 18 credits"],
+              ["Upgrade only after proof", "Use the trial to validate fit first"],
+            ].map(([title, note]) => (
+              <div key={title} className="rounded-xl border border-slate-200 bg-white px-4 py-4">
+                <p className="text-sm font-semibold text-slate-950">{title}</p>
+                <p className="mt-1 text-sm leading-relaxed text-slate-600">{note}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
       <details className="rounded-[1.5rem] border border-slate-200 bg-[#fff8e8] px-5 py-4">
         <summary className="cursor-pointer list-none text-sm font-semibold text-slate-950">
           Internal testing tools

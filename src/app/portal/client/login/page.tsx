@@ -46,6 +46,22 @@ export default function ClientPortalLoginPage() {
               </div>
             ))}
           </div>
+
+          <div className="mt-5 rounded-2xl border border-sky-200 bg-[linear-gradient(135deg,#eff6ff_0%,#ffffff_55%,#ecfeff_100%)] p-5">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-sky-700">How far 25 credits goes</p>
+            <div className="mt-3 grid gap-3">
+              {[
+                ["1 workflow build + 2 light tests", "5 + 10 + 10 credits"],
+                ["1 workflow build + 1 standard run", "5 + 18 credits"],
+                ["$25 in product value", "based on $1/credit top-up pricing"],
+              ].map(([title, note]) => (
+                <div key={title} className="rounded-xl border border-slate-200 bg-white px-4 py-4">
+                  <p className="text-sm font-semibold text-slate-950">{title}</p>
+                  <p className="mt-1 text-sm leading-relaxed text-slate-600">{note}</p>
+                </div>
+              ))}
+            </div>
+          </div>
         </section>
 
         <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">

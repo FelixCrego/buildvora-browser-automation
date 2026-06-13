@@ -143,6 +143,35 @@ export default async function PortalPage() {
             <StepCard step="2. Build" title="Use voice or choose a workflow" note="Customers can describe a workflow, review the scope, and see the estimated burn." />
             <StepCard step="3. Run" title="Launch with clear credit usage" note="Protected actions pause for approval and final credits settle after the run ends." />
           </div>
+
+          <div className="mt-4 rounded-2xl border border-sky-200 bg-[linear-gradient(135deg,#eff6ff_0%,#ffffff_55%,#ecfeff_100%)] p-5">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="max-w-2xl">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-sky-700">What 25 credits gets you</p>
+                <h2 className="mt-2 text-xl font-semibold tracking-[-0.03em] text-slate-950">$25 of usable product value, not just a teaser</h2>
+                <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                  The trial is enough to build a real workflow and test it in a meaningful way before paying.
+                </p>
+              </div>
+              <span className="rounded-full border border-sky-200 bg-white px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-sky-700">
+                25 credits = $25 value
+              </span>
+            </div>
+
+            <div className="mt-4 grid gap-3 md:grid-cols-3">
+              {[
+                ["Build + 2 tests", "5 + 10 + 10 = 25", "Generate one workflow from voice, then run two light test executions."],
+                ["Build + 1 standard run", "5 + 18 = 23", "Scope the workflow and run one more realistic, multi-step test."],
+                ["Prove the handoff", "before upgrade", "Use the trial to confirm workflow fit, approvals, and credit behavior with no commitment."],
+              ].map(([title, amount, note]) => (
+                <div key={title} className="rounded-xl border border-slate-200 bg-white px-4 py-4">
+                  <p className="text-sm font-semibold text-slate-950">{title}</p>
+                  <p className="mt-2 text-sm font-medium text-sky-700">{amount}</p>
+                  <p className="mt-2 text-sm leading-relaxed text-slate-600">{note}</p>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 

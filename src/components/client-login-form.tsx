@@ -119,6 +119,15 @@ export default function ClientLoginForm() {
         </div>
       </div>
 
+      <div className="mt-4 rounded-xl border border-sky-200 bg-[linear-gradient(135deg,#eff6ff_0%,#ffffff_55%,#ecfeff_100%)] p-4">
+        <p className="text-sm font-semibold text-slate-950">25-credit trial examples</p>
+        <div className="mt-2 grid gap-2 text-sm leading-relaxed text-slate-600">
+          <p>Build one workflow from voice: 5 credits.</p>
+          <p>Run two light tests after that: 10 + 10 credits.</p>
+          <p>Or build once and use one standard run: 5 + 18 credits.</p>
+        </div>
+      </div>
+
       <button
         type="submit"
         disabled={loading}
